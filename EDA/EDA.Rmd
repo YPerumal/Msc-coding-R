@@ -1,11 +1,29 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 
 ```{r}
 # library imports
 library(tidyverse)
+```
+
+### Import Data
+```{r}
+df <- read.csv('/Volumes/GoogleDrive/.shortcut-targets-by-id/1LnbARGIKlyJL6mBq0bvwmURJEoFnY-Cl/Yevashan Perumal MSc/Data/data with some cdw.csv')
+```
+
+```{r}
+head(df)
+```
+
+Drop the unnecessary columns
+```{r}
+cols_to_drop <- c('RecordID','ProductCode')
+
+df %>% select(-cols_to_drop)
 ```
 
