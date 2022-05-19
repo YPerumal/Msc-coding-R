@@ -19,6 +19,7 @@ df <- read.csv('/Volumes/GoogleDrive/.shortcut-targets-by-id/1LnbARGIKlyJL6mBq0b
 ```{r}
 head(df)
 ```
+
 ```{r}
 dim(df)
 ```
@@ -28,20 +29,44 @@ Drop the unnecessary columns
 ```{r}
 cols_to_drop <- c('RecordID','ProductCode','DimGCSPartyKeyLifeCovered'
                   ,'DimDateKeyInitiated','DimDateKeyFinalised','DimDateKeyAccepted'
-                  ,'UnderwritingInitiationDate','UnderwritingFinaliseDate'
-                  )
+                  ,'UnderwritingInitiationDate','UnderwritingFinaliseDate')
 
 #drop columns
-df2 <- df %>% select(-cols_to_drop)
+df2 <- df %>% select(-all_of(cols_to_drop))
 
 #remove duplicate rows
 df2 <- df2 %>% distinct()
 
 dim(df2)
 ```
+```{r}
+head(df2)
+```
+```{r}
+str(df2)
+```
 
 
 ```{r}
+tab1 <- df2 %>% summarise_all(n_distinct)%>%t()
+tab1 <- data.frame(tab1)
+tab1 %>% arrange(tab1)
+```
 
+
+```{r}
+df2$GammaGTValue <-  as.integer(df2$GammaGTValue)
+df2 %>% filter(GammaGTValue<200) %>%  ggplot(aes(x=GammaGTValue))+geom_histogram(binwidth = 10)
+```
+Some really weird large outliers than need to be taken care of.
+Also some NAs introduced when converting to character.
+
+
+```{r}
+cols_to_drop2 <- c()
+```
+
+```{r}
+df2
 ```
 
