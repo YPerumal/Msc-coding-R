@@ -49,44 +49,65 @@ str(df2)
 
 
 ```{r}
-tab1 <- df2 %>% summarise_all(n_distinct)%>%t()
-tab1 <- data.frame(tab1)
-tab1 %>% arrange(tab1)
+# Unique values for all variables in the dataframe
+
+# tab1 <- df2 %>% summarise_all(n_distinct)%>%t()
+# tab1 <- data.frame(tab1)
+# tab1 %>% arrange(tab1)
 ```
 # Univariate exploration
-=======
->>>>>>> f2a211743399f24ba4c478ae65bc84206ff00178
 
 ## Numeric Variables (and ones that should be)
 
+###### UnderwritingDuration
 ```{r}
-tab1 <- df2 %>% summarise_all(n_distinct)%>%t()
-tab1 <- data.frame(tab1)
-tab1 %>% arrange(tab1)
+summary(df2$UnderwritingDuration)
+df2 %>% ggplot(aes(x=UnderwritingDuration))+geom_histogram()
+#all
+df2 %>% ggplot(aes(x=UnderwritingDuration))+geom_boxplot()
+# remove some outliers eyeballing the boxplot
+df2 %>% filter(UnderwritingDuration<100) %>% ggplot(aes(x=UnderwritingDuration))+geom_boxplot()
+
+#unique vals
+length(unique(df2$UnderwritingDuration))
 ```
+Seems like a reasonable amount of info. Some definite weird outliers that would need to be treated.
+Think it's how long the underwriting process took in days
 
-
+###### CurrentCoverAmount
 ```{r}
-df2$GammaGTValue <-  as.integer(df2$GammaGTValue)
-df2 %>% filter(GammaGTValue<200) %>%  ggplot(aes(x=GammaGTValue))+geom_histogram(binwidth = 10)
+# initially showing up as a characater
+summary(df2$CurrentCoverAmount)
+#unique vals
+length(unique(df2$CurrentCoverAmount))
+
+# Investigating the null that happers in the conversion
+# df2[df2$CurrentCoverAmount=='NULL',]
+# df2$CurrentCoverAmount_converted <- as.numeric(df2$CurrentCoverAmount)
+# df2$CurrentCoverAmount_converted <- as.numeric(df2$CurrentCoverAmount)
+# df2 %>% select(CurrentCoverAmount_converted,CurrentCoverAmount) %>% filter(is.na(CurrentCoverAmount_converted))
+
+df2$CurrentCoverAmount <- as.numeric(df2$CurrentCoverAmount)
+
+
+options(scipen = 999)
+df2 %>% ggplot(aes(x=CurrentCoverAmount))+geom_histogram()
+#all
+df2 %>% ggplot(aes(x=CurrentCoverAmount))+geom_boxplot()
+
+# remove some outliers eyeballing the boxplot
+df2 %>% filter(CurrentCoverAmount<10**6) %>% ggplot(aes(x=CurrentCoverAmount))+geom_boxplot()
+
+#unique vals
+length(unique(df2$UnderwritingDuration))
 ```
-Some really weird large outliers than need to be taken care of.
-Also some NAs introduced when converting to character.
-
-
-```{r}
-cols_to_drop2 <- c()
-```
-
-```{r}
-df2
-```
-
-
+Looks like there is one 'NULL' value that introduces an NA whwen converting to numeric.
 
 # Target Variable
 ```{r}
 df2$GammaGTValue <-  as.integer(df2$GammaGTValue)
 df2 %>% filter(GammaGTValue<200) %>%  ggplot(aes(x=GammaGTValue))+geom_histogram(binwidth = 10)
 ```
+Some really weird large outliers than need to be taken care of.
+Also some NAs introduced when converting to character.
 
