@@ -74,6 +74,35 @@ length(unique(df2$UnderwritingDuration))
 Seems like a reasonable amount of info. Some definite weird outliers that would need to be treated.
 Think it's how long the underwriting process took in days
 
+```{r}
+numeric_explorer <- function(data,variable,filter_hist){
+                
+                # summary(data$variable)
+                data %>% ggplot(aes(x=variable))+geom_histogram()
+                #all
+                data %>% ggplot(aes(x=variable))+geom_boxplot()
+                # remove some outliers eyeballing the boxplot
+                # data %>% filter(variable<filter_hist) %>% ggplot(aes(x=variable))+geom_boxplot()
+}
+
+numeric_explorer(df2,UnderwritingDuration,100)
+
+box_and_hist <- function(variable){
+    hist <- df2%>%ggplot(aes_string(x=variable))+geom_histogram()+
+            theme(axis.title.x=element_blank(),
+                  axis.title.y = element_text(size = 6),
+                  plot.title = element_text(size = 8))+
+            labs(title = paste("Histogram and Boxplot of",variable))
+    boxp <- df2%>%ggplot()+
+      geom_boxplot(aes_string(x=variable))+
+      theme(axis.title.x = element_text(size =8))
+    grid.arrange(hist,boxp,nrow=2)
+}
+library(gridExtra)
+box_and_hist('UnderwritingDuration')
+```
+
+
 ###### CurrentCoverAmount
 ```{r}
 # initially showing up as a characater
