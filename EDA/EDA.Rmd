@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: 'R Notebook'
 output:
   html_document:
     df_print: paged
@@ -9,6 +9,7 @@ output:
 ```{r}
 # library imports
 library(tidyverse)
+library(gridExtra)
 ```
 
 ### Import Data
@@ -29,7 +30,15 @@ Drop the unnecessary columns
 ```{r}
 cols_to_drop <- c('RecordID','ProductCode','DimGCSPartyKeyLifeCovered'
                   ,'DimDateKeyInitiated','DimDateKeyFinalised','DimDateKeyAccepted'
-                  ,'UnderwritingInitiationDate','UnderwritingFinaliseDate')
+                  ,'UnderwritingInitiationDate','UnderwritingFinaliseDate',
+                  'UnderwritingCode','UnderwritingTerritory',
+                  'UnderwritingDuration','QuoteNumber' ,
+                  # because of high correlation/target leakage/they're informed by GammaGT
+                  'LoadingPercentage','CoverLoadingAmount','HealthLoadingPercentage',
+                  'CoverLoading','HealthLoadingIndicator','CoverLoadingIndicator',# double check these are all for current app?could be previous
+                  'UnderwritingOutcome','NoOfLoadingsApplied',
+                   'LifeCoveredClientID'  #customer identifier
+                  )
 
 #drop columns
 df2 <- df %>% select(-all_of(cols_to_drop))
@@ -39,13 +48,31 @@ df2 <- df2 %>% distinct()
 
 dim(df2)
 ```
-```{r}
-head(df2)
-```
+
 ```{r}
 str(df2)
 ```
-<<<<<<< HEAD
+Lots of numeric values coming through as characters; More nulls will likely be introduced when I convert them
+
+```{r}
+char_to_numeric_list <- c( 
+'CurrentCoverAmount','CholesterolValue','GammaGTValue','CotinineValue',
+'BloodSugarValue','ClientBMIValue','DoctorBMIValue','SystolicBloodPressureValue',
+'DiastolicBloodPressureValue','RestingPulseValue','HeightValue','WeightValue',
+'NumberOfCigarettes','NumberOfFailedLevel1Evaluations','NumberOfFailedDetailEvaluations','NumberOfExclusions',    
+'NumberOfVerifications','NumberOfDeferrals','MonthlyIncome','MonthlyIncome_Override',
+'UnderwritingCreditAmount','InputMedium','CoverAmount',
+'PremiumRateCatDiscount','ReinsuranceRateCatDiscount','IntermediaryQualityDiscount','ManualDiscountIndicator',  
+'MonthlyIncome_Override2','AGE','ALL_BEN_COUNT','ALL_CONTRACT_COUNT','ANNUAL_INVESTMENT','AUM'
+)            
+df2 <- df2 %>% mutate_at(char_to_numeric_list, as.numeric)
+```
+
+
+
+```{r}
+colnames(df2) 
+```
 
 
 ```{r}
@@ -59,49 +86,46 @@ str(df2)
 
 ## Numeric Variables (and ones that should be)
 
-###### UnderwritingDuration
 ```{r}
-summary(df2$UnderwritingDuration)
-df2 %>% ggplot(aes(x=UnderwritingDuration))+geom_histogram()
-#all
-df2 %>% ggplot(aes(x=UnderwritingDuration))+geom_boxplot()
-# remove some outliers eyeballing the boxplot
-df2 %>% filter(UnderwritingDuration<100) %>% ggplot(aes(x=UnderwritingDuration))+geom_boxplot()
+# numeric_explorer <- function(data,variable,filter_hist){
+#                 
+#                 # summary(data$variable)
+#                 data %>% ggplot(aes(x=variable))+geom_histogram()
+#                 #all
+#                 data %>% ggplot(aes(x=variable))+geom_boxplot()
+#                 # remove some outliers eyeballing the boxplot
+#                 # data %>% filter(variable<filter_hist) %>% ggplot(aes(x=variable))+geom_boxplot()
+# }
 
-#unique vals
-length(unique(df2$UnderwritingDuration))
-```
-Seems like a reasonable amount of info. Some definite weird outliers that would need to be treated.
-Think it's how long the underwriting process took in days
+# numeric_explorer(df2,UnderwritingDuration,100)
 
-```{r}
-numeric_explorer <- function(data,variable,filter_hist){
-                
-                # summary(data$variable)
-                data %>% ggplot(aes(x=variable))+geom_histogram()
-                #all
-                data %>% ggplot(aes(x=variable))+geom_boxplot()
-                # remove some outliers eyeballing the boxplot
-                # data %>% filter(variable<filter_hist) %>% ggplot(aes(x=variable))+geom_boxplot()
-}
+# Function to explore numeric variables with a box as whisker
 
-numeric_explorer(df2,UnderwritingDuration,100)
 
 box_and_hist <- function(variable){
     hist <- df2%>%ggplot(aes_string(x=variable))+geom_histogram()+
             theme(axis.title.x=element_blank(),
                   axis.title.y = element_text(size = 6),
                   plot.title = element_text(size = 8))+
-            labs(title = paste("Histogram and Boxplot of",variable))
+            labs(title = paste('Histogram and Boxplot of',variable))
     boxp <- df2%>%ggplot()+
       geom_boxplot(aes_string(x=variable))+
       theme(axis.title.x = element_text(size =8))
+    summary(variable)
     grid.arrange(hist,boxp,nrow=2)
 }
-library(gridExtra)
-box_and_hist('UnderwritingDuration')
+
+
+
 ```
 
+
+```{r}
+
+
+
+box_and_hist('CurrentCoverAmount')
+```
 
 ###### CurrentCoverAmount
 ```{r}
@@ -111,7 +135,7 @@ summary(df2$CurrentCoverAmount)
 length(unique(df2$CurrentCoverAmount))
 
 # Investigating the null that happers in the conversion
-# df2[df2$CurrentCoverAmount=='NULL',]
+# df2df2$CurrentCoverAmount=='NULL',
 # df2$CurrentCoverAmount_converted <- as.numeric(df2$CurrentCoverAmount)
 # df2$CurrentCoverAmount_converted <- as.numeric(df2$CurrentCoverAmount)
 # df2 %>% select(CurrentCoverAmount_converted,CurrentCoverAmount) %>% filter(is.na(CurrentCoverAmount_converted))
@@ -139,4 +163,14 @@ df2 %>% filter(GammaGTValue<200) %>%  ggplot(aes(x=GammaGTValue))+geom_histogram
 ```
 Some really weird large outliers than need to be taken care of.
 Also some NAs introduced when converting to character.
+
+# Preprocessing steps
+- drop unused columns
+- remove duplicate rows
+- convert character columns to numeric
+- convert indicator columns to factors;
+```{r}
+
+```
+
 
