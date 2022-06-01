@@ -72,6 +72,8 @@ df2 <- df2 %>% mutate_at(char_to_numeric_list, as.numeric)
 ```{r}
 missmap(df2)
 ```
+
+
 ```{r}
 colSums(is.na(df2))
 
@@ -84,11 +86,6 @@ Couple columns I could def drop(or maybe need to check vals before numeric conve
 
 Some missing values for GammaGT;
 Some with like 50% missing. Maybe need to leave those out too. 
-
-```{r}
-colnames(df2) 
-```
-
 
 ```{r}
 # Unique values for all variables in the dataframe
@@ -111,51 +108,43 @@ box_and_hist <- function(variable){
     boxp <- df2%>%ggplot()+
       geom_boxplot(aes_string(x=variable))+
       theme(axis.title.x = element_text(size =8))
-    summary(variable)
     grid.arrange(hist,boxp,nrow=2)
     
-    # summary(variable)
+    summary(df2 %>% select(variable))
 }
+
+# add option to create a filtered view?
+```
+
+
+```{r}
+countplot_explore <- function(input_variable){
+    bar <- df2%>%ggplot(aes_string(x=input_variable))+geom_bar()+
+      labs(title = paste('Countplot of ',input_variable))
+    bar
+    # summary(df2 %>% select(variable))
+}
+
+# add option to create a filtered view?
+```
+
+```{r}
+countplot_explore(input_variable='SmokerStatus')
 ```
 
 ```{r message=FALSE, warning=FALSE}
-lapply(df2 %>% select_if(is.numeric), box_and_hist)
+num_cols <- df2 %>% select_if(is.numeric) %>% colnames()
+```
+
+```{r}
+num_cols[1]
 ```
 
 
 ```{r}
-
-box_and_hist('CholesterolValue')
+# CurrentCoverAmount
+box_and_hist(num_cols[1])
 ```
-
-###### CurrentCoverAmount
-```{r}
-# initially showing up as a characater
-summary(df2$CurrentCoverAmount)
-#unique vals
-length(unique(df2$CurrentCoverAmount))
-
-# Investigating the null that happers in the conversion
-# df2df2$CurrentCoverAmount=='NULL',
-# df2$CurrentCoverAmount_converted <- as.numeric(df2$CurrentCoverAmount)
-# df2$CurrentCoverAmount_converted <- as.numeric(df2$CurrentCoverAmount)
-# df2 %>% select(CurrentCoverAmount_converted,CurrentCoverAmount) %>% filter(is.na(CurrentCoverAmount_converted))
-
-df2$CurrentCoverAmount <- as.numeric(df2$CurrentCoverAmount)
-
-
-options(scipen = 999)
-df2 %>% ggplot(aes(x=CurrentCoverAmount))+geom_histogram()
-#all
-df2 %>% ggplot(aes(x=CurrentCoverAmount))+geom_boxplot()
-
-# remove some outliers eyeballing the boxplot
-df2 %>% filter(CurrentCoverAmount<10**6) %>% ggplot(aes(x=CurrentCoverAmount))+geom_boxplot()
-
-#unique vals
-length(unique(df2$UnderwritingDuration))
-```
-Looks like there is one 'NULL' value that introduces an NA whwen converting to numeric.
 
 # Target Variable
 ```{r}
@@ -170,8 +159,8 @@ Also some NAs introduced when converting to character.
 - remove duplicate rows
 - convert character columns to numeric
 - convert indicator columns to factors;
+
 ```{r}
 
 ```
-
 
