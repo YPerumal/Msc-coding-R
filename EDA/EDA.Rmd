@@ -10,11 +10,12 @@ output:
 # library imports
 library(tidyverse)
 library(gridExtra)
+library(Amelia)
 ```
 
 ### Import Data
 ```{r}
-df <- read.csv('/Volumes/GoogleDrive/My Drive/Yevashan Perumal MSc v2/Data/data with some cdw.csv')
+df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/GoogleDrive-chopsuey8918@gmail.com/My Drive/Yevashan Perumal MSc v2/Data/data with some cdw.csv')
 ```
 
 ```{r}
@@ -68,7 +69,21 @@ char_to_numeric_list <- c(
 df2 <- df2 %>% mutate_at(char_to_numeric_list, as.numeric)
 ```
 
+```{r}
+missmap(df2)
+```
+```{r}
+colSums(is.na(df2))
 
+```
+Couple columns I could def drop(or maybe need to check vals before numeric conversion):
+- ManualDiscountIndicator
+- NumberOfVerifications
+- CotinineValue
+- InputMedium
+
+Some missing values for GammaGT;
+Some with like 50% missing. Maybe need to leave those out too. 
 
 ```{r}
 colnames(df2) 
@@ -87,21 +102,6 @@ colnames(df2)
 ## Numeric Variables (and ones that should be)
 
 ```{r}
-# numeric_explorer <- function(data,variable,filter_hist){
-#                 
-#                 # summary(data$variable)
-#                 data %>% ggplot(aes(x=variable))+geom_histogram()
-#                 #all
-#                 data %>% ggplot(aes(x=variable))+geom_boxplot()
-#                 # remove some outliers eyeballing the boxplot
-#                 # data %>% filter(variable<filter_hist) %>% ggplot(aes(x=variable))+geom_boxplot()
-# }
-
-# numeric_explorer(df2,UnderwritingDuration,100)
-
-# Function to explore numeric variables with a box as whisker
-
-
 box_and_hist <- function(variable){
     hist <- df2%>%ggplot(aes_string(x=variable))+geom_histogram()+
             theme(axis.title.x=element_blank(),
@@ -113,18 +113,19 @@ box_and_hist <- function(variable){
       theme(axis.title.x = element_text(size =8))
     summary(variable)
     grid.arrange(hist,boxp,nrow=2)
+    
+    # summary(variable)
 }
+```
 
-
-
+```{r message=FALSE, warning=FALSE}
+lapply(df2 %>% select_if(is.numeric), box_and_hist)
 ```
 
 
 ```{r}
 
-
-
-box_and_hist('CurrentCoverAmount')
+box_and_hist('CholesterolValue')
 ```
 
 ###### CurrentCoverAmount
