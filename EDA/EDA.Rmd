@@ -6,7 +6,7 @@ output:
 ---
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 # library imports
 library(tidyverse)
 library(gridExtra)
@@ -15,7 +15,9 @@ library(Amelia)
 
 ### Import Data
 ```{r}
-df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/GoogleDrive-chopsuey8918@gmail.com/My Drive/Yevashan Perumal MSc v2/Data/data with some cdw.csv')
+# df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/GoogleDrive-chopsuey8918@gmail.com/My Drive/Yevashan Perumal MSc v2/Data/data with some cdw.csv')
+
+df <- read.csv('/Users/yevashanperumal/Documents/Data Science Masters/2022/Local backup of Gdrive/Data/data with some cdw.csv')
 ```
 
 ```{r}
@@ -137,14 +139,21 @@ num_cols <- df2 %>% select_if(is.numeric) %>% colnames()
 ```
 
 ```{r}
-num_cols[1]
-```
-
-
-```{r}
 # CurrentCoverAmount
 box_and_hist(num_cols[1])
 ```
+
+```{r}
+# CholesterolValue
+box_and_hist(num_cols[2])
+```
+Couple large outliers that need to be cleaned(maybe winsorised?). Probably data capture errors. Or those people are dead.
+
+```{r}
+# CotinineValue
+box_and_hist(num_cols[4])
+```
+Dont think I cna use this one by the number of missing values. I remember Tinashe saying that I should use the SmokerStatus ind instead.
 
 # Target Variable
 ```{r}
