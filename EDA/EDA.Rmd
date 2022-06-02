@@ -123,6 +123,8 @@ box_and_hist <- function(variable){
 countplot_explore <- function(input_variable){
     bar <- df2%>%ggplot(aes_string(x=input_variable))+geom_bar()+
       labs(title = paste('Countplot of ',input_variable))
+    print(input_variable)
+    print(sum(is.na(df2[input_variable])))
     bar
     # summary(df2 %>% select(variable))
 }
@@ -130,13 +132,12 @@ countplot_explore <- function(input_variable){
 # add option to create a filtered view?
 ```
 
-```{r}
-countplot_explore(input_variable='SmokerStatus')
-```
-
 ```{r message=FALSE, warning=FALSE}
 num_cols <- df2 %>% select_if(is.numeric) %>% colnames()
+
+char_cols <- df2 %>% select_if(is.character) %>% colnames()
 ```
+------------------------
 
 ```{r}
 # CurrentCoverAmount
@@ -364,24 +365,170 @@ Same as above
 
 ------------------------------------
 ```{r}
-# UnderwritingCreditAmount
-box_and_hist(num_cols[21])
+# ProductSoldType
+countplot_explore(char_cols[1])
+```
+Can probably group Acell Only Not sure it would be super relevant to Gamma GT
+
+```{r}
+# SmokerStatus
+countplot_explore(char_cols[2])
+```
+Def use.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[3])
+
+sum(is.na(df2$OccupationClassCode))
+```
+Def use. Important from underwriting criteria persepctive
+
+```{r}
+# OccupationDescription
+# char_cols[4]
+head(df$OccupationDescription)
+sum(is.na(df$OccupationDescription))
+```
+Lots of text here. Mayhaps some nlp? could be interesting;
+
+
+```{r}
+# DisabilityIncomeClass
+countplot_explore(char_cols[5])
+```
+Could be an interesting var. SOme spread of data, but majority unknown.
+
+```{r}
+# AutoDeclinedIndicator
+countplot_explore(char_cols[6])
+```
+Yeah this doesnt look super helpful.Drop I think
+
+```{r}
+# AutoUnderwrittenIndicator
+countplot_explore(char_cols[7])
+```
+Same as above.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[8])
+```
+This one looks like it could be more helpful. THink I can use it.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[9])
+```
+Customer had previous NTU more likely to have higher/lower gamma GT? Need to double checkj the definition of this field.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[10])
+```
+Seems useful, but need ot check what this is.
+
+```{r}
+# ProductSoldType
+# countplot_explore(char_cols[11])
+
+head(df$UnderwritingPostalCode)
+length(unique(df$UnderwritingPostalCode))
+```
+Proxy for are perhaps. could be handy. I do need to double check how many were recorded as 'Unkown' to see if this is very usable.
+
+
+```{r}
+# ExclusionIndicator
+countplot_explore(char_cols[12])
 ```
 
 ```{r}
-# UnderwritingCreditAmount
-box_and_hist(num_cols[21])
+# ProductSoldType
+countplot_explore(char_cols[13])
+```
+Hmm looks better populated than that other product field I had above. Maybe I can ditch that and keep this.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[14])
+```
+Check with the notmal education fields which to use. Maybe I can just combine them, and when they dont match take this one. 
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[15])
+
+unique(df$IncomeCoverBand)
+```
+Coverage here looks weird. Need to compare with the other income fields and see what I should use for Income.
+
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[16])
 ```
 
 ```{r}
-# UnderwritingCreditAmount
-box_and_hist(num_cols[21])
+# ProductSoldType
+countplot_explore(char_cols[17])
 ```
+Empty, drop.
 
 ```{r}
-# UnderwritingCreditAmount
-box_and_hist(num_cols[21])
+# ProductSoldType
+countplot_explore(char_cols[18])
 ```
+From CDW; looking good.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[19])
+```
+From CDW; looking good.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[20])
+```
+Some farmers up in here yo. Unkowns up in here too.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[21])
+```
+Also some professionals around town.Unkowns too.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[22])
+```
+Also some civil servants around town.Unkowns too.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[23])
+```
+Some values. Need to grou some of these together for sure. 
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[24])
+```
+Fair chunk of NA in here, but think could be usable. NOt sure how it's handy related to GammaGT though.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[25])
+```
+Marriage=high blood pressure? OK,boomer.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[26])
+```
+More unkowns than expected
 
 
 # Target Variable
