@@ -528,7 +528,7 @@ Marriage=high blood pressure? OK,boomer.
 # ProductSoldType
 countplot_explore(char_cols[26])
 ```
-More unkowns than expected
+More unkowns than expected.
 
 
 # Target Variable
