@@ -155,6 +155,235 @@ box_and_hist(num_cols[4])
 ```
 Dont think I cna use this one by the number of missing values. I remember Tinashe saying that I should use the SmokerStatus ind instead.
 
+
+```{r}
+# BloodSugarValue
+box_and_hist(num_cols[5])
+```
+Need to take care of very large outliers. And the zero values.
+
+```{r}
+# ClientBMIValue
+box_and_hist(num_cols[6])
+```
+Need to take care of very large outliers. And the very small(impossible) values.
+
+```{r}
+# DoctorBMIValue
+box_and_hist(num_cols[7])
+```
+Same as above
+
+```{r}
+# DoctorBMIValue
+box_and_hist(num_cols[8])
+```
+Large outliers. Seems like there may be a lot of zero values; not sure if it affects the quality of the feature.
+
+```{r}
+# DoctorBMIValue
+box_and_hist(num_cols[9])
+```
+Same as systolic by the looks of it
+
+```{r}
+# RestingPulseValue
+box_and_hist(num_cols[10])
+```
+Outliers. 
+
+```{r}
+# HeightValue
+box_and_hist(num_cols[11])
+```
+Outliers again. Maybe people using different scales. Probably a high correlation with BMI; not as much of an issue for tree based methods. Might need to be removed anyway? Ask Stefan why tree based methods are robust to highly correlated values.
+
+```{r}
+# WeightValue
+box_and_hist(num_cols[12])
+```
+Same as height
+
+```{r}
+# NumberOfCigarettes
+box_and_hist(num_cols[13])
+```
+Useless. All zero, need to drop.
+
+
+```{r}
+# NumberOfFailedLevel1Evaluations
+box_and_hist(num_cols[14])
+```
+Not terrible. Need to confirm what this feature means.
+
+```{r}
+# NumberOfFailedLevel1Evaluations
+box_and_hist(num_cols[15])
+
+#countplot
+```
+Same as above. Missing for about half the data though.
+
+```{r}
+# NumberOfExclusions
+box_and_hist(num_cols[16])
+```
+This one also seems like it might be full of zeroes and need to be dropped.
+
+```{r}
+# NumberOfVerifications
+box_and_hist(num_cols[17])
+
+#countplot?
+```
+Needs to confirm what this one means
+
+
+```{r}
+# NumberOfDeferrals
+box_and_hist(num_cols[18])
+```
+Also need to check what this means. Seems like I could use it though.
+
+```{r}
+# MonthlyIncome
+box_and_hist(num_cols[19])
+```
+Outliers skewing it. And about 16k missing values.
+
+```{r}
+# MonthlyIncome
+box_and_hist(num_cols[20])
+```
+Max value  here looks like nonsense. Less missing vals than income fields above though.
+
+```{r}
+# UnderwritingCreditAmount
+box_and_hist(num_cols[21])
+```
+All zeroes; needs to drop
+
+```{r}
+# IRPCode
+box_and_hist(num_cols[22])
+
+# Countplot?This looks like a category
+```
+
+```{r}
+# UnderwritingCreditAmount
+box_and_hist(num_cols[23])
+```
+All nulls, need to drop.
+
+```{r}
+# EntryANB
+box_and_hist(num_cols[24])
+```
+Seems usable, but now to actually find out what it is.
+
+```{r}
+# CoverAmount
+box_and_hist(num_cols[25])
+```
+Big values, but those are possible. Maybe banding this to take care of them e.g. >R5mil (maybe consider for above values too)
+
+```{r}
+# EducationID
+box_and_hist(num_cols[26])
+
+# This looks like a category fields too
+```
+
+```{r}
+# PremiumRateCatDiscount
+box_and_hist(num_cols[27])
+```
+Lots of nulls.lots of zeroes. also not siure if it is something determined by gamma GT/med tests. But think it might be a drop.
+Looks like they go in 2.5% jumps. Category field like Wang2021 did?
+
+```{r}
+# ReinsuranceRateCatDiscount
+box_and_hist(num_cols[28])
+```
+Same as above. Lots of zeroes and nulls.
+```{r}
+# IntermediaryQualityDiscount
+box_and_hist(num_cols[29])
+```
+Seems more useful than above two, but still lots of zero vallues. Maybe an indicator column and then see how many non zeroes?
+
+
+```{r}
+# ManualDiscountIndicator
+box_and_hist(num_cols[30])
+
+ # Actually check if the field is a Y/N?
+```
+Empty, drop. Actually check if the field is a Y/N?
+
+```{r}
+# MonthlyIncome_Override2
+box_and_hist(num_cols[31])
+```
+MonthlyIncome_Override2. need to check if this is a duplicate of MonthlyIncome_Override; maybe came from different tables.
+
+
+```{r}
+# AGE
+box_and_hist(num_cols[32])
+```
+Key variable. OUtliers again.
+
+```{r}
+# ALL_BEN_COUNT
+box_and_hist(num_cols[33])
+```
+CDW; lots of nulls though
+
+```{r}
+# ALL_CONTRACT_COUNT
+box_and_hist(num_cols[34])
+```
+Same as above
+
+```{r}
+# ANNUAL_INVESTMENT
+box_and_hist(num_cols[35])
+```
+Same as above;
+
+
+```{r}
+# AUM
+box_and_hist(num_cols[36])
+```
+Same as above
+
+
+------------------------------------
+```{r}
+# UnderwritingCreditAmount
+box_and_hist(num_cols[21])
+```
+
+```{r}
+# UnderwritingCreditAmount
+box_and_hist(num_cols[21])
+```
+
+```{r}
+# UnderwritingCreditAmount
+box_and_hist(num_cols[21])
+```
+
+```{r}
+# UnderwritingCreditAmount
+box_and_hist(num_cols[21])
+```
+
+
 # Target Variable
 ```{r}
 df2$GammaGTValue <-  as.integer(df2$GammaGTValue)
