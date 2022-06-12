@@ -1,0 +1,24 @@
+---
+title: "PreProcessing"
+author: "Yevashan Perumal"
+date: '2022-06-11'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+# library imports
+library(tidyverse)
+library(gridExtra)
+library(Amelia)
+```
+
+
+```{r}
+df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+```
+

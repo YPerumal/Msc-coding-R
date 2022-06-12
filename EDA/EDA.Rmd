@@ -13,6 +13,7 @@ editor_options:
 library(tidyverse)
 library(gridExtra)
 library(Amelia)
+library(corrplot)   
 ```
 
 ### Import Data
@@ -614,6 +615,18 @@ df2 %>% filter(GammaGTValue<200) %>%  ggplot(aes(x=GammaGTValue))+geom_histogram
 
 Some really weird large outliers than need to be taken care of. Also
 some NAs introduced when converting to character.
+
+
+```{r}
+# Correlation plot
+corplot <- cor(df2[,num_cols])
+corplot[corplot > 0.6 ] 
+```
+```{r}
+library(corrr)
+chart.Correlation(df2[,num_cols] ,histogram=TRUE, pch=19)
+```
+
 
 # Preprocessing steps
 
