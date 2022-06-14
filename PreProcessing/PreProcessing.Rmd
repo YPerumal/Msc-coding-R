@@ -23,7 +23,7 @@ df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-Universityo
 ```
 
 ```{r}
-post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions','UnderwritingCreditAmount'
+post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions','UnderwritingCreditAmount',
                         'InputMedium','ManualDiscountIndicator')
 ```
 
