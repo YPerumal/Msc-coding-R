@@ -35,7 +35,8 @@ dim(df)
 Drop the unnecessary columns
 
 ```{r}
-cols_to_drop <- c('RecordID',
+cols_to_drop <- c(# Just didnt seem handy:
+                  'RecordID',
                   'ProductCode',
                   'DimGCSPartyKeyLifeCovered',
                   'DimDateKeyInitiated','DimDateKeyFinalised','DimDateKeyAccepted'
@@ -44,11 +45,13 @@ cols_to_drop <- c('RecordID',
                   'UnderwritingTerritory',
                   'UnderwritingDuration',
                   'QuoteNumber' ,
-                  # because of high correlation/target leakage/they're informed by GammaGT
+                  # because of high correlation/target leakage/they're informed by GammaGT:
                   'LoadingPercentage','CoverLoadingAmount','HealthLoadingPercentage',
-                  'CoverLoading','HealthLoadingIndicator','CoverLoadingIndicator',# double check these are all for current app?could be previous
+                  # double check these are all for current app?could be previous:
+                  'CoverLoading','HealthLoadingIndicator','CoverLoadingIndicator',
                   'UnderwritingOutcome','NoOfLoadingsApplied',
-                   'LifeCoveredClientID'  #customer identifier
+                  #customer identifier:
+                   'LifeCoveredClientID'  
                   )
 
 #drop columns
@@ -75,7 +78,7 @@ char_to_numeric_list <- c(
 'NumberOfCigarettes','NumberOfFailedLevel1Evaluations','NumberOfFailedDetailEvaluations','NumberOfExclusions',    
 'NumberOfVerifications','NumberOfDeferrals','MonthlyIncome','MonthlyIncome_Override',
 'UnderwritingCreditAmount','InputMedium','CoverAmount',
-'PremiumRateCatDiscount','ReinsuranceRateCatDiscount','IntermediaryQualityDiscount','ManualDiscountIndicator',  
+'PremiumRateCatDiscount','ReinsuranceRateCatDiscount','IntermediaryQualityDiscount',  
 'MonthlyIncome_Override2','AGE','ALL_BEN_COUNT','ALL_CONTRACT_COUNT','ANNUAL_INVESTMENT','AUM'
 )            
 df2 <- df2 %>% mutate_at(char_to_numeric_list, as.numeric)
@@ -255,6 +258,8 @@ Same as above. Missing for about half the data though.
 ```{r}
 # NumberOfExclusions
 box_and_hist(num_cols[16])
+
+# dim(df[which(df2$NumberOfExclusions>0),]) # only 5987 greater than zero
 ```
 
 This one also seems like it might be full of zeroes and need to be
@@ -306,7 +311,7 @@ box_and_hist(num_cols[22])
 ```
 
 ```{r}
-# UnderwritingCreditAmount
+# InputMedium
 box_and_hist(num_cols[23])
 ```
 
@@ -363,6 +368,7 @@ an indicator column and then see how many non zeroes?
 box_and_hist(num_cols[30])
 
  # Actually check if the field is a Y/N?
+unique(df$ManualDiscountIndicator)
 ```
 
 Empty, drop. Actually check if the field is a Y/N?
@@ -606,6 +612,12 @@ countplot_explore(char_cols[26])
 
 More unkowns than expected.
 
+```{r}
+# 
+countplot_explore('ManualDiscountIndicator')
+```
+Eh seems pretty empty; probably drop.
+
 # Target Variable
 
 ```{r}
@@ -615,18 +627,6 @@ df2 %>% filter(GammaGTValue<200) %>%  ggplot(aes(x=GammaGTValue))+geom_histogram
 
 Some really weird large outliers than need to be taken care of. Also
 some NAs introduced when converting to character.
-
-
-```{r}
-# Correlation plot
-corplot <- cor(df2[,num_cols])
-corplot[corplot > 0.6 ] 
-```
-```{r}
-library(corrr)
-chart.Correlation(df2[,num_cols] ,histogram=TRUE, pch=19)
-```
-
 
 # Preprocessing steps
 

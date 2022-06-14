@@ -22,3 +22,9 @@ library(Amelia)
 df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
 ```
 
+```{r}
+post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions','UnderwritingCreditAmount'
+                        'InputMedium','ManualDiscountIndicator')
+```
+
+- NumberOfFailedLevel1Evaluations : fill na with zeros
