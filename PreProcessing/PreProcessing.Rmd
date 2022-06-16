@@ -107,10 +107,14 @@ df3$NumberOfFailedDetailEvaluations[is.na(df3$NumberOfFailedDetailEvaluations)]=
 df3$NumberOfFailedDetailEvaluations[is.na(df3$NumberOfFailedDetailEvaluations)]= 0
 ```
 
-
+ 
 ```{r}
 
+InputMedium? Should tis be numeric???? double check when I start next time.
+
 tmp <- data.frame(df2$NumberOfDeferrals,df3$NumberOfDeferrals)
+
+
 tmp %>% filter(is.na(df3.NumberOfDeferrals)==T)
 
 print(table(df2$NumberOfDeferrals))
