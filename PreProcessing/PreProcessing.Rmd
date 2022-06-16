@@ -23,8 +23,104 @@ df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-Universityo
 ```
 
 ```{r}
-post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions','UnderwritingCreditAmount',
-                        'InputMedium','ManualDiscountIndicator')
+# dropped columns from EDA
+cols_to_drop <- c(# Just didnt seem handy:
+                  'RecordID',
+                  'ProductCode',
+                  'DimGCSPartyKeyLifeCovered',
+                  'DimDateKeyInitiated','DimDateKeyFinalised','DimDateKeyAccepted'
+                  ,'UnderwritingInitiationDate','UnderwritingFinaliseDate',
+                  'UnderwritingCode',
+                  'UnderwritingTerritory',
+                  'UnderwritingDuration',
+                  'QuoteNumber' ,
+                  # because of high correlation/target leakage/they're informed by GammaGT:
+                  'LoadingPercentage','CoverLoadingAmount','HealthLoadingPercentage',
+                  # double check these are all for current app?could be previous:
+                  'CoverLoading','HealthLoadingIndicator','CoverLoadingIndicator',
+                  'UnderwritingOutcome','NoOfLoadingsApplied',
+                  #customer identifier:
+                   'LifeCoveredClientID'  
+                  )
+
+#drop columns
+df2 <- df %>% select(-all_of(cols_to_drop))
+
+#remove duplicate rows
+df2 <- df2 %>% distinct()
+```
+The columns above just looked useless from eyeballing and seeing what they are. Dropping duplicates because there were mutliple things again.
+
+
+```{r}
+char_to_numeric_list <- c( 
+'CurrentCoverAmount','CholesterolValue','GammaGTValue','CotinineValue',
+'BloodSugarValue','ClientBMIValue','DoctorBMIValue','SystolicBloodPressureValue',
+'DiastolicBloodPressureValue','RestingPulseValue','HeightValue','WeightValue',
+'NumberOfCigarettes','NumberOfFailedLevel1Evaluations','NumberOfFailedDetailEvaluations','NumberOfExclusions',    
+'NumberOfVerifications','NumberOfDeferrals','MonthlyIncome','MonthlyIncome_Override',
+'UnderwritingCreditAmount','InputMedium','CoverAmount',
+'PremiumRateCatDiscount','ReinsuranceRateCatDiscount','IntermediaryQualityDiscount',  
+'MonthlyIncome_Override2','AGE','ALL_BEN_COUNT','ALL_CONTRACT_COUNT','ANNUAL_INVESTMENT','AUM'
+)            
+df3 <- df2 %>% mutate_at(char_to_numeric_list, as.numeric)
+```
+
+```{r}
+post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions',
+                        'UnderwritingCreditAmount','InputMedium','ManualDiscountIndicator',
+                        'MonthlyIncome_Override2','MonthlyIncome')
+df3 <- df3 %>% select(-all_of(post_eda_drop_cols))
+```
+
+
+# Deal with nulls generated in the numeic conversion
+
+GammGT
+```{r}
+# drop all the GammaGT values that are null
+df3 <- df3 %>% filter(is.na(GammaGTValue)==F)
+
+# drop all the GammaGT values that are null; 1 row in df2
+df3 <- df3 %>% filter(is.na(CurrentCoverAmount)==F)
+
+# drop all the RestingPulseValue values that are null; 533 row in df2
+df3 <- df3 %>% filter(is.na(RestingPulseValue)==F)
+
+# drop all the NumberOfFailedLevel1Evaluations values that are null; 48 row in df2;0 already possible value
+df3 <- df3 %>% filter(is.na(NumberOfFailedLevel1Evaluations)==F)
+
+# drop all the NumberOfDeferrals values that are null; 48 row in df2
+df3 <- df3 %>% filter(is.na(NumberOfDeferrals)==F)
+```
+
+```{r}
+# Fill nulls with zeros; not one of the values existing so making choice here.
+df3$NumberOfFailedDetailEvaluations[is.na(df3$NumberOfFailedDetailEvaluations)]= 0
+
+# same as above; most have two; no zeros so making choice
+df3$NumberOfVerifications[is.na(df3$NumberOfVerifications)]= 0
+
+
+
+df3$NumberOfFailedDetailEvaluations[is.na(df3$NumberOfFailedDetailEvaluations)]= 0
+df3$NumberOfFailedDetailEvaluations[is.na(df3$NumberOfFailedDetailEvaluations)]= 0
+```
+
+
+```{r}
+
+tmp <- data.frame(df2$NumberOfDeferrals,df3$NumberOfDeferrals)
+tmp %>% filter(is.na(df3.NumberOfDeferrals)==T)
+
+print(table(df2$NumberOfDeferrals))
 ```
 
 - NumberOfFailedLevel1Evaluations : fill na with zeros
+
+
+```{r}
+#remove duplicate rows
+df2 <- df2 %>% distinct()
+```
+At the end remove do one last distinct row check.
