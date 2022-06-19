@@ -72,15 +72,13 @@ post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions
                         'MonthlyIncome_Override2','MonthlyIncome',
                         'PremiumRateCatDiscount',#not a lot of variation here, about 1k rows
                         'ReinsuranceRateCatDiscount', #not a lot of variation here, about 1k rows
-                        'df3.IntermediaryQualityDiscount' #not a lot of variation here, about 1k rows
+                        'IntermediaryQualityDiscount' #not a lot of variation here, about 1k rows
                         )
 df3 <- df3 %>% select(-all_of(post_eda_drop_cols))
 ```
 
 
 # Deal with nulls generated in the numeic conversion
-
-GammGT
 ```{r}
 # drop all the GammaGT values that are null
 df3 <- df3 %>% filter(is.na(GammaGTValue)==F)
@@ -96,6 +94,9 @@ df3 <- df3 %>% filter(is.na(NumberOfFailedLevel1Evaluations)==F)
 
 # drop all the NumberOfDeferrals values that are null; 48 row in df2
 df3 <- df3 %>% filter(is.na(NumberOfDeferrals)==F)
+
+# drop all the MonthlyIncome_Override values that are null; 1377 row in df3
+df3 <- df3 %>% filter(is.na(MonthlyIncome_Override)==F)
 ```
 
 ```{r}
@@ -105,13 +106,49 @@ df3$NumberOfFailedDetailEvaluations[is.na(df3$NumberOfFailedDetailEvaluations)]=
 # same as above; most have two; no zeros so making choice
 df3$NumberOfVerifications[is.na(df3$NumberOfVerifications)]= 0
 
+################################################################################
 # code to investigate numeric columns
 # tmp <- data.frame(df2$IntermediaryQualityDiscount,df3$IntermediaryQualityDiscount)
-# 
 # tmp %>% filter(is.na(df3.IntermediaryQualityDiscount)==T)
-# 
 # print(table(df2$IntermediaryQualityDiscount))
+```
 
+
+```{r}
+# START HERE! Examine remaining numeric columns for nulls and treat them;
+
+# Find all numeric columns 
+num_cols <- df3 %>% select_if(is.numeric)
+```
+
+
+```{r}
+# Find all char columns
+char_cols <- df3 %>% select_if(is.character)
+
+# null_counts <- char_cols %>% 
+#     summarise_all(funs(sum(as.numeric(is.na(.)), na.rm=TRUE))) %>% 
+#     collect()  %>% 
+#     select_if(funs(. > 0))
+# 
+# null_counts
+```
+
+
+
+
+
+
+
+
+```{r}
+# check for remaining null columns
+null_counts <- num_cols %>% 
+    summarise_all(funs(sum(as.numeric(is.na(.)), na.rm=TRUE))) %>% 
+    collect()  %>% select_if(funs(. > 0)) %>% 
+    colnames()
+
+# The onlyt columns with nulls are the CDW ones. Going to make a two datasets with them; long and wide;
 ```
 
 ```{r}
