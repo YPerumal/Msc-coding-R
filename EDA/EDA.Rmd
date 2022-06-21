@@ -418,6 +418,8 @@ Same as above
 
 ------------------------------------------------------------------------
 
+## Categorical Plots
+
 ```{r}
 # ProductSoldType
 countplot_explore(char_cols[1])

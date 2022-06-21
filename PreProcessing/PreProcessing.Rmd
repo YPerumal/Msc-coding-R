@@ -135,6 +135,10 @@ char_cols <- df3 %>% select_if(is.character)
 ```
 
 
+```{r}
+# drop all the MonthlyIncome_Override values that are null; 1377 row in df3
+df3 <- df3 %>% filter(OccupationClassCode!='-')
+```
 
 
 
