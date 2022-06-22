@@ -187,11 +187,6 @@ df3 <- df3 %>%                               # Replacing values
 ```{r}
 df3 %>% select(MARITAL_STATUS) %>% table() %>% as.data.frame()
 ```
-```{r}
-IncomeCoverBand
-```
-
-
 
 ```{r}
 # check for remaining null columns
@@ -208,3 +203,8 @@ null_counts <- num_cols %>%
 df3 <- df3 %>% distinct()
 ```
 At the end remove do one last distinct row check.
+
+```{r}
+# Change all categorical to factor
+```
+
