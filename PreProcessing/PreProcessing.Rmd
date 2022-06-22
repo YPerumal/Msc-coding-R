@@ -40,7 +40,7 @@ cols_to_drop <- c(# Just didnt seem handy:
                   'CoverLoading','HealthLoadingIndicator','CoverLoadingIndicator',
                   'UnderwritingOutcome','NoOfLoadingsApplied',
                   #customer identifier:
-                   'LifeCoveredClientID'  
+                   'LifeCoveredClientID'
                   )
 
 #drop columns
@@ -72,7 +72,14 @@ post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions
                         'MonthlyIncome_Override2','MonthlyIncome',
                         'PremiumRateCatDiscount',#not a lot of variation here, about 1k rows
                         'ReinsuranceRateCatDiscount', #not a lot of variation here, about 1k rows
-                        'IntermediaryQualityDiscount' #not a lot of variation here, about 1k rows
+                        'IntermediaryQualityDiscount', #not a lot of variation here, about 1k rows
+                        'AutoDeclinedIndicator', #cat column, not much variation
+                        'AutoUnderwrittenIndicator', #cat column, not much variation
+                        'UnderwritingPostalCode', # lots of nulls
+                        'IncomeCoverBand', # everything just 100k>
+                        'IntermediaryQualityCategory' ,# empty
+                        'PUBLIC_SECTOR_SOURCE', # just didnt think it would be handy
+                        'ManualDiscountIndicator' #empty
                         )
 df3 <- df3 %>% select(-all_of(post_eda_drop_cols))
 ```
@@ -97,6 +104,8 @@ df3 <- df3 %>% filter(is.na(NumberOfDeferrals)==F)
 
 # drop all the MonthlyIncome_Override values that are null; 1377 row in df3
 df3 <- df3 %>% filter(is.na(MonthlyIncome_Override)==F)
+
+
 ```
 
 ```{r}
@@ -104,7 +113,36 @@ df3 <- df3 %>% filter(is.na(MonthlyIncome_Override)==F)
 df3$NumberOfFailedDetailEvaluations[is.na(df3$NumberOfFailedDetailEvaluations)]= 0
 
 # same as above; most have two; no zeros so making choice
-df3$NumberOfVerifications[is.na(df3$NumberOfVerifications)]= 0
+df3$NumberOfVerifications[is.na(df3$NumberOfVerifications)] = 0
+
+# EducationID_Override two values to change to mode there's just 2 rows
+df3 <- df3 %>% mutate(EducationID_Override = replace(EducationID_Override, EducationID_Override == 'NULL', '1'))
+
+# ASS_ETHNIC_GROUP replace blank with unknown
+df3 <- df3 %>% mutate(ASS_ETHNIC_GROUP = replace(ASS_ETHNIC_GROUP, ASS_ETHNIC_GROUP == '', 'UNKNOWN'))
+
+# PROVINCE replace blank with unknown
+df3 <- df3 %>% mutate(PROVINCE = replace(PROVINCE, PROVINCE == '', 'UNKNOWN'))
+
+# FARMER_IND replace blank with unknown
+df3 <- df3 %>% mutate(FARMER_IND = replace(FARMER_IND, FARMER_IND == '', 'UNKNOWN'))
+
+# PROF_MARKET_IND replace blank with unknown
+df3 <- df3 %>% mutate(PROF_MARKET_IND = replace(PROF_MARKET_IND, PROF_MARKET_IND == '', 'UNKNOWN'))
+
+# PROVINCE replace blank with unknown
+df3 <- df3 %>% mutate(PUBLIC_SECTOR_IND = replace(PUBLIC_SECTOR_IND, PUBLIC_SECTOR_IND == '', 'UNKNOWN'))
+
+
+# PROVINCE replace blank with unknown; quite a few unkown, might not be usable
+df3 <- df3 %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == '', 'UNKNOWN'))
+df3 <- df3 %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == 'N/A', 'UNKNOWN'))
+
+# MARITAL_STATUS replace blank with unknown; quite a few unkown, might not be usable
+df3 <- df3 %>% mutate(MARITAL_STATUS = replace(MARITAL_STATUS, MARITAL_STATUS == '', 'UNKNOWN'))
+
+# MARITAL_STATUS replace blank with unknown; quite a few unkown, might not be usable
+df3 <- df3 %>% mutate(GENDER = replace(GENDER, GENDER == '', 'UNKNOWN'))
 
 ################################################################################
 # code to investigate numeric columns
@@ -140,8 +178,18 @@ char_cols <- df3 %>% select_if(is.character)
 df3 <- df3 %>% filter(OccupationClassCode!='-')
 ```
 
+```{r}
+df3 <- df3 %>%                               # Replacing values
+  mutate(EducationID_Override = replace(EducationID_Override, EducationID_Override == 'NULL', '1'))
+```
 
 
+```{r}
+df3 %>% select(MARITAL_STATUS) %>% table() %>% as.data.frame()
+```
+```{r}
+IncomeCoverBand
+```
 
 
 

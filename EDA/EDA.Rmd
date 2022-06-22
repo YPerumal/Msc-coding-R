@@ -504,7 +504,7 @@ head(df$UnderwritingPostalCode)
 length(unique(df$UnderwritingPostalCode))
 ```
 
-Proxy for are perhaps. could be handy. I do need to double check how
+Proxy for location perhaps. could be handy. I do need to double check how
 many were recorded as 'Unkown' to see if this is very usable.
 
 ```{r}
@@ -521,7 +521,7 @@ Hmm looks better populated than that other product field I had above.
 Maybe I can ditch that and keep this.
 
 ```{r}
-# ProductSoldType
+# EducationID_Override
 countplot_explore(char_cols[14])
 ```
 
@@ -558,28 +558,28 @@ countplot_explore(char_cols[18])
 From CDW; looking good.
 
 ```{r}
-# ProductSoldType
+# PROVINCE
 countplot_explore(char_cols[19])
 ```
 
 From CDW; looking good.
 
 ```{r}
-# ProductSoldType
+# FARMER_IND
 countplot_explore(char_cols[20])
 ```
 
 Some farmers up in here yo. Unkowns up in here too.
 
 ```{r}
-# ProductSoldType
+# PROF_MARKET_IND
 countplot_explore(char_cols[21])
 ```
 
 Also some professionals around town.Unkowns too.
 
 ```{r}
-# ProductSoldType
+# PUBLIC_SECTOR_IND
 countplot_explore(char_cols[22])
 ```
 
