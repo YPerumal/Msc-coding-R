@@ -240,11 +240,6 @@ df4[t1] <- lapply(df4[t1], factor)
 ```
 
 ```{r}
-str(df4)
-```
-
-
-```{r}
 # Ordinal factors
 
 # "OccupationClassCode"  
@@ -260,7 +255,7 @@ df4$EducationID_Override <- factor(df4$EducationID_Override, order = TRUE,
                                     levels = c("-1", "1", "2","3","4"))
 
  # "SumAssuredBand"
-df4$EducationID_Override <- factor(df4$EducationID_Override, order = TRUE, 
+df4$SumAssuredBand <- factor(df4$SumAssuredBand, order = TRUE, 
                                     levels = c( "A: R0.00 - R100,000.00"   , 
                                                 "B: R100,000.00 - R200,000.00"  , 
                                                 "C: R200,000.00 - R300,000.00"    ,
