@@ -229,7 +229,62 @@ At the end remove do one last distinct row check.
 
 ```{r}
 # Change all categorical to factor
+print(names(char_cols))
+```
+```{r}
+t1 <-  c("ProductSoldType","SmokerStatus","AutoDeferredIndicator","NTUIndicator","LOAIndicator","ExclusionIndicator",    "AcceleratorIndicator","ASS_ETHNIC_GROUP","PROVINCE","FARMER_IND","PROF_MARKET_IND","PUBLIC_SECTOR_IND",
+"PUBLIC_SECTOR_TYPE","MARITAL_STATUS","GENDER")        
 
-names(char_cols)
+# coerce char columns to factor, no order
+df4[t1] <- lapply(df4[t1], factor) 
+```
+
+```{r}
+str(df4)
+```
+
+
+```{r}
+# Ordinal factors
+
+# "OccupationClassCode"  
+df4$OccupationClassCode <- factor(df4$OccupationClassCode, order = TRUE, 
+                                    levels = c("-","A", "B", "C","D","E"))
+
+# "DisabilityIncomeClass"  
+df4$DisabilityIncomeClass <- factor(df4$DisabilityIncomeClass, order = TRUE, 
+                                    levels = c("Unknown","1", "1*", "2","3"))
+
+# "EducationID_Override"  
+df4$EducationID_Override <- factor(df4$EducationID_Override, order = TRUE, 
+                                    levels = c("-1", "1", "2","3","4"))
+
+ # "SumAssuredBand"
+df4$EducationID_Override <- factor(df4$EducationID_Override, order = TRUE, 
+                                    levels = c( "A: R0.00 - R100,000.00"   , 
+                                                "B: R100,000.00 - R200,000.00"  , 
+                                                "C: R200,000.00 - R300,000.00"    ,
+                                                 "D: R300,000.00 - R400,000.00"  ,
+                                                 "E: R400,000.00 - R500,000.00"   ,
+                                                 "F: R500,000.00 - R600,000.00" ,
+                                                 "G: R600,000.00 - R700,000.00" ,
+                                                "H: R700,000.00 - R800,000.00"  ,
+                                                 "I: R800,000.00 - R900,000.00"  ,
+                                                   "J: R900,000.00 - R1,000,000.00"  ,
+                                                  "K: R1,000,000.00 - R1,500,000.00",
+                                                 "L: R1,500,000.00 - R2,000,000.00",
+                                                 "M: R2,000,000.00 - R2,500,000.00"
+                                                ))
+
+```
+
+
+```{r}
+# Text description field, probably need to drop
+df4 <- df4 %>% select(-OccupationDescription)
+```
+
+```{r}
+str(df4)
 ```
 
