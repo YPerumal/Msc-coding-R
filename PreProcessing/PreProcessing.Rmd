@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Package Imports
 ```{r}
 # library imports
 library(tidyverse)
@@ -17,10 +17,12 @@ library(gridExtra)
 library(Amelia)
 ```
 
+## Data Import
 ```{r}
 df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
 ```
 
+## Columns dropped from EDA
 ```{r}
 # dropped columns from EDA
 cols_to_drop <- c(# Just didnt seem handy:
@@ -48,9 +50,9 @@ df2 <- df %>% select(-all_of(cols_to_drop))
 #remove duplicate rows
 df2 <- df2 %>% distinct()
 ```
-The columns above just looked useless from eyeballing and seeing what they are. Dropping duplicates because there were mutliple things again.
+The columns above just looked useless from eyeballing and seeing what they are. Dropping duplicates because there were multiple things again.
 
-
+## Converting char to numeric for appropriate columns
 ```{r}
 char_to_numeric_list <- c( 
 'CurrentCoverAmount','CholesterolValue','GammaGTValue','CotinineValue',
@@ -65,6 +67,7 @@ char_to_numeric_list <- c(
 df3 <- df2 %>% mutate_at(char_to_numeric_list, as.numeric)
 ```
 
+## Drop some columns after EDA
 ```{r}
 post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions',
                         'UnderwritingCreditAmount','InputMedium','ManualDiscountIndicator',
@@ -84,7 +87,7 @@ df3 <- df3 %>% select(-all_of(post_eda_drop_cols))
 ```
 
 
-# Deal with nulls generated in the numeic conversion
+## Deal with nulls generated in the numeric conversion
 ```{r}
 # drop all the GammaGT values that are null
 df3 <- df3 %>% filter(is.na(GammaGTValue)==F)
@@ -103,10 +106,9 @@ df3 <- df3 %>% filter(is.na(NumberOfDeferrals)==F)
 
 # drop all the MonthlyIncome_Override values that are null; 1377 row in df3
 df3 <- df3 %>% filter(is.na(MonthlyIncome_Override)==F)
-
-
 ```
 
+## Fill Nulls with appropriate values for numeric and character columns
 ```{r}
 # Fill nulls with zeros; not one of the values existing so making choice here.
 df3$NumberOfFailedDetailEvaluations[is.na(df3$NumberOfFailedDetailEvaluations)]= 0
@@ -152,12 +154,9 @@ df3 <- df3 %>% mutate(GENDER = replace(GENDER, GENDER == '', 'UNKNOWN'))
 
 
 ```{r}
-# START HERE! Examine remaining numeric columns for nulls and treat them;
-
 # Find all numeric columns 
 num_cols <- df3 %>% select_if(is.numeric)
 ```
-
 
 ```{r}
 # Find all char columns
@@ -171,20 +170,8 @@ char_cols <- df3 %>% select_if(is.character)
 # null_counts
 ```
 
-
 ```{r}
-# drop all the MonthlyIncome_Override values that are null; 1377 row in df3
-df3 <- df3 %>% filter(OccupationClassCode!='-')
-```
-
-```{r}
-df3 <- df3 %>%                               # Replacing values
-  mutate(EducationID_Override = replace(EducationID_Override, EducationID_Override == 'NULL', '1'))
-```
-
-
-```{r}
-df3 %>% select(MARITAL_STATUS) %>% table() %>% as.data.frame()
+# df3 %>% select(MARITAL_STATUS) %>% table() %>% as.data.frame()
 ```
 
 ```{r}
@@ -194,16 +181,55 @@ null_counts <- num_cols %>%
     collect()  %>% select_if(funs(. > 0)) %>% 
     colnames()
 
-# The onlyt columns with nulls are the CDW ones. Going to make a two datasets with them; long and wide;
+# The only columns with nulls are the CDW ones. Going to make a two datasets with them; long and wide;
+```
+
+## Remove Outliers
+```{r}
+# create detect outlier function
+detect_outlier <- function(x) {
+ 
+    # calculate first quantile
+    Quantile1 <- quantile(x, probs=.25)
+ 
+    # calculate third quantile
+    Quantile3 <- quantile(x, probs=.75)
+ 
+    # calculate inter quartile range
+    IQR = Quantile3-Quantile1
+ 
+    # return true or false
+    x > Quantile3 + (IQR*1.5) | x < Quantile1 - (IQR*1.5)
+}
+ 
+# create remove outlier function
+remove_outlier <- function(dataframe,
+                            columns=names(dataframe)) {
+ 
+    # for loop to traverse in columns vector
+    for (col in columns) {
+ 
+        # remove observation if it satisfies outlier function
+        dataframe <- dataframe[!detect_outlier(dataframe[[col]]), ]
+    }
+ 
+    # return dataframe
+    print("Remove outliers")
+    print(dataframe)
+}
+ 
+df4 <- remove_outlier(df3, columns = names(num_cols %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)))
 ```
 
 ```{r}
 #remove duplicate rows
-df3 <- df3 %>% distinct()
+df4 <- df4 %>% distinct()
 ```
 At the end remove do one last distinct row check.
 
 ```{r}
 # Change all categorical to factor
+
+names(char_cols)
 ```
 
