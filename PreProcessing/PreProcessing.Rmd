@@ -283,3 +283,35 @@ df4 <- df4 %>% select(-OccupationDescription)
 str(df4)
 ```
 
+# last check for nulls
+```{r}
+# Find all numeric columns 
+num_cols2<- df4 %>% select_if(is.numeric)
+null_counts <- num_cols2 %>% 
+    summarise_all(funs(sum(as.numeric(is.na(.)), na.rm=TRUE))) %>% 
+    collect()  %>% select_if(funs(. > 0)) %>% 
+    colnames()
+null_counts
+```
+
+```{r}
+colSums(is.na(df4))
+```
+
+
+At this points only the CDW numeric columns have null values remaining.
+Going to be making two datasets now:
+
+```{r}
+# dataset with CDW columns, but now nulls
+df_wide <- df4 %>% na.omit()
+dim(df_wide)
+```
+
+```{r}
+# dataset dropping CDW columns, but with more rows. 
+df_long <- df4 %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)
+
+dim(df_long)
+```
+
