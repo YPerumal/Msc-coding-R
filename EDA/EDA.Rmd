@@ -630,13 +630,4 @@ df2 %>% filter(GammaGTValue<200) %>%  ggplot(aes(x=GammaGTValue))+geom_histogram
 Some really weird large outliers than need to be taken care of. Also
 some NAs introduced when converting to character.
 
-# Preprocessing steps
-
--   drop unused columns
--   remove duplicate rows
--   convert character columns to numeric
--   convert indicator columns to factors;
-
-```{r}
-
-```
+# End
