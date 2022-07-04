@@ -3,7 +3,72 @@ title: "R Notebook"
 output: html_notebook
 ---
 
+# Import Libraries
 ```{r}
 library(xgboost)
+library(tidyverse)
+library(caret)
+```
+
+# Import Data
+```{r}
+# df_wide <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/wide_data.csv')
+
+df_long <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/long_data.csv')
+```
+
+# Train-Test Split for df_long
+```{r}
+# Create the training and test datasets
+set.seed(42)
+
+# Step 1: Get row numbers for the training data
+trainRowNumbecrs <- createDataPartition(df_long$GammaGTValue, p=0.8, list=FALSE)
+
+# Step 2: Create the training  dataset
+train_df <- df_long[trainRowNumbers,]
+x_train <- train_df %>% select(-GammaGTValue)
+y_train <- train_df %>% select(GammaGTValue)
+
+# Step 3: Create the test dataset
+test_df <- df_long[-trainRowNumbers,]
+x_test <- test_df %>% select(-GammaGTValue)
+y_test <- test_df %>% select(GammaGTValue)
+```
+
+# Random Forest Using Caret
+```{r}
+# Random forest
+# Set grid search for hyperparaneter search
+rf_grid <- expand.grid(mtry = 3:13,
+                       splitrule = 'variance', #Have to specify. This is RSS for reg.
+                       min.node.size = c(1,5)) #Default for regression is 5. Controls tree size.
+rf_ctrl <- trainControl(method = 'oob', verboseIter = F)
+
+# set.seed(42)
+rf_gridsearch <- train(Rented.Bike.Count ~ ., 
+                       data = train_df,
+                       method = 'ranger',
+                       num.trees = 500,
+                       verbose = T,
+                       trControl = rf_ctrl,
+                       tuneGrid = rf_grid) #Here is the grid
+
+rf_gridsearch$bestTune
+mtry <- rf_gridsearch$bestTune[[1]]
+splitrule <- rf_gridsearch$bestTune[[2]]
+min.node.size <- rf_gridsearch$bestTune[[3]]
+
+# train a final model to get variable importance plot
+rf_final <- randomForest(Rented.Bike.Count ~ ., data = train_df,
+                           ntree = 500, 
+                           importance = TRUE,
+                            mtry=mtry,
+                            splitrule=splitrule,
+                            min.node.size=min.node.size)
+
+#Predictions
+rf_grid_pred <- predict(rf_final, newdata = test_df)
+rf_rmse <-  sqrt(mean((test_df$Rented.Bike.Count- rf_grid_pred)^2))
 ```
 

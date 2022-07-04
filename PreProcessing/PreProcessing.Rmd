@@ -284,6 +284,7 @@ str(df4)
 ```
 
 # last check for nulls
+
 ```{r}
 # Find all numeric columns 
 num_cols2<- df4 %>% select_if(is.numeric)
