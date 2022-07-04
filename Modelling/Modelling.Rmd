@@ -4,10 +4,16 @@ output: html_notebook
 ---
 
 # Import Libraries
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(xgboost)
 library(tidyverse)
 library(caret)
+library(randomForest)
+library(ggplot2)
+library(caret)
+library(gbm)
+library(tree)
+library(xgboost)
 ```
 
 # Import Data
@@ -23,7 +29,7 @@ df_long <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-Univer
 set.seed(42)
 
 # Step 1: Get row numbers for the training data
-trainRowNumbecrs <- createDataPartition(df_long$GammaGTValue, p=0.8, list=FALSE)
+trainRowNumbers <- createDataPartition(df_long$GammaGTValue, p=0.8, list=FALSE)
 
 # Step 2: Create the training  dataset
 train_df <- df_long[trainRowNumbers,]
@@ -40,19 +46,21 @@ y_test <- test_df %>% select(GammaGTValue)
 ```{r}
 # Random forest
 # Set grid search for hyperparaneter search
-rf_grid <- expand.grid(mtry = 3:13,
+rf_grid <- expand.grid(mtry = 3:5,
                        splitrule = 'variance', #Have to specify. This is RSS for reg.
                        min.node.size = c(1,5)) #Default for regression is 5. Controls tree size.
+
 rf_ctrl <- trainControl(method = 'oob', verboseIter = F)
 
 # set.seed(42)
-rf_gridsearch <- train(Rented.Bike.Count ~ ., 
+rf_gridsearch <- train(GammaGTValue ~ ., 
                        data = train_df,
                        method = 'ranger',
-                       num.trees = 500,
+                       num.trees = 10,
                        verbose = T,
-                       trControl = rf_ctrl,
-                       tuneGrid = rf_grid) #Here is the grid
+                       trControl = rf_ctrl
+                       # ,tuneGrid = rf_grid #Here is the grid
+                       ) 
 
 rf_gridsearch$bestTune
 mtry <- rf_gridsearch$bestTune[[1]]
@@ -60,8 +68,8 @@ splitrule <- rf_gridsearch$bestTune[[2]]
 min.node.size <- rf_gridsearch$bestTune[[3]]
 
 # train a final model to get variable importance plot
-rf_final <- randomForest(Rented.Bike.Count ~ ., data = train_df,
-                           ntree = 500, 
+rf_final <- randomForest(GammaGTValue ~ ., data = train_df,
+                           ntree = 10,
                            importance = TRUE,
                             mtry=mtry,
                             splitrule=splitrule,
@@ -69,6 +77,6 @@ rf_final <- randomForest(Rented.Bike.Count ~ ., data = train_df,
 
 #Predictions
 rf_grid_pred <- predict(rf_final, newdata = test_df)
-rf_rmse <-  sqrt(mean((test_df$Rented.Bike.Count- rf_grid_pred)^2))
+rf_rmse <-  sqrt(mean((test_df$GammaGTValue- rf_grid_pred)^2))
 ```
 
