@@ -42,6 +42,13 @@ x_test <- test_df %>% select(-GammaGTValue)
 y_test <- test_df %>% select(GammaGTValue)
 ```
 
+# Decision Tree
+```{r}
+
+```
+
+
+
 # Random Forest Using Caret
 ```{r}
 # Random forest
@@ -84,7 +91,7 @@ rf_rmse <-  sqrt(mean((test_df$GammaGTValue- rf_grid_pred)^2))
 XGB using Caret
 ```{r}
 # XGboost model
-xgb_grid <- expand.grid(nrounds = c(100,250),  #B - number of trees
+xgb_grid <- expand.grid(nrounds = c(10,25),  #B - number of trees
                         max_depth = c(1,5),      #d - interaction depth
                         eta = c(0.1,0.01),       #lambda - learning rate
                         gamma = 0.001,            #mindev
@@ -94,14 +101,14 @@ xgb_grid <- expand.grid(nrounds = c(100,250),  #B - number of trees
 )
 ctrl <-  trainControl(method = 'cv', number = 5, verboseIter = T)
 
-xgb_bike <- train(GammaGTValue ~ ., data = train_df,
+xgb_final <- train(GammaGTValue ~ ., data = train_df,
                  method = 'xgbTree',
                  trControl = ctrl,
                  verbose = F,
                  tuneGrid = xgb_grid)
 
 #Predictions
-xgb_pred <- predict(xgb_bike, test_df)
+xgb_pred <- predict(xgb_final, test_df)
 xgb_rmse <- sqrt(mean((test_df$GammaGTValue - xgb_pred)^2))
 
 ```
