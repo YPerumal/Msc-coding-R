@@ -44,7 +44,35 @@ y_test <- test_df %>% select(GammaGTValue)
 
 # Decision Tree
 ```{r}
+# Random forest
+# Set train control for cross-val
+dt_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = F)
 
+# Set grid search for hyperparaneter search
+# dt_grid <- expand.grid(mtry = 3:5,
+#                        splitrule = 'variance', #Have to specify. This is RSS for reg.
+#                        min.node.size = c(1,5)) #Default for regression is 5. Controls tree size.
+
+# set.seed(42)
+dt_gridsearch <- train(GammaGTValue ~ ., 
+                       data = train_df,
+                       method = 'rpart',
+                       trControl = dt_ctrl
+                       # ,tuneGrid = dt_grid #Here is the grid
+                       ) 
+#
+# dt_gridsearch$bestTune
+# mtry <- dt_gridsearch$bestTune[[1]]
+# splitrule <- dt_gridsearch$bestTune[[2]]
+# min.node.size <- dt_gridsearch$bestTune[[3]]
+
+# train a final model to get variable importance plot
+library(tree)
+dt_final <-  tree(GammaGTValue ~ ., data = train_df)
+summary(dt_final)
+#Predictions
+dt_grid_pred <- predict(dt_final, newdata = test_df)
+dt_rmse <-  sqrt(mean((test_df$GammaGTValue- dt_grid_pred)^2))
 ```
 
 
