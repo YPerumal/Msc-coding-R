@@ -144,14 +144,15 @@ library(mice)
 ## Set up data
 ```{r}
 # copy train data 
-imput_train_df <- x_train
-#create column for predictions i.e. missing values
-imput_train_df['ImputedGammaGT'] <- NA
+imput_train_df <- train_df
 
-# copy test data 
-imput_test_df <- x_test
-#create column for predictions i.e. missing values
-imput_test_df['ImputedGammaGT'] <- NA
+#copy tet data
+imput_test_df <- test_df
+# make the test data target column nulls
+imput_test_df$GammaGTValue <- NA
+
+#combine into one
+imput_data <- imput_train_df %>% bind_rows(imput_test_df)
 ```
 
 ## MICE
@@ -162,6 +163,6 @@ predM = init$predictorMatrix
 ```
 
 ```{r}
-init
+?mice
 ```
 
