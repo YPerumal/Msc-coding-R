@@ -14,7 +14,11 @@ library(rpart)
 ```{r}
 # df_wide <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/wide_data.csv')
 
-df_long <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/long_data.csv')
+# df_long <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/long_data.csv')
+```
+
+```{r}
+load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
 ```
 
 ## Train-Test Split for df_long
@@ -158,11 +162,18 @@ imput_data <- imput_train_df %>% bind_rows(imput_test_df)
 ## MICE
 ```{r}
 system.time(
-mice(imput_train_df) 
+imp <- mice(imput_data,seed = 42) 
 )
+imp <- mice(imput_data,seed = 42) 
+print(imp)
+
+imp$imp$GammaGTValue
 # meth = init$method
 # predM = init$predictorMatrix
 ```
 
 # pretty quick to run this step on the default.
+
+
+
 
