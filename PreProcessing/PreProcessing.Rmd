@@ -309,6 +309,7 @@ df_wide <- df4 %>% na.omit()
 dim(df_wide)
 
 write.csv(df_wide,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/wide_data.csv", row.names=FALSE)
+
 ```
 
 ```{r}
@@ -318,5 +319,9 @@ df_long <- df4 %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVEST
 dim(df_long)
 
 write.csv(df_long,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/long_data.csv", row.names=FALSE)
+```
+
+```{r}
+save(df_wide,df_long,file = "data_for_modelling.Rdata")
 ```
 

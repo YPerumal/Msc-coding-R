@@ -157,12 +157,12 @@ imput_data <- imput_train_df %>% bind_rows(imput_test_df)
 
 ## MICE
 ```{r}
-init = mice(imput_train_df, maxit=0) 
-meth = init$method
-predM = init$predictorMatrix
+system.time(
+mice(imput_train_df) 
+)
+# meth = init$method
+# predM = init$predictorMatrix
 ```
 
-```{r}
-?mice
-```
+# pretty quick to run this step on the default.
 
