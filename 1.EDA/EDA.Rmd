@@ -1,0 +1,633 @@
+---
+title: 'R Notebook'
+output:
+  html_document:
+    df_print: paged
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r message=FALSE, warning=FALSE}
+# library imports
+library(tidyverse)
+library(gridExtra)
+library(Amelia)
+library(corrplot)   
+```
+
+### Import Data
+
+```{r}
+df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+
+# df <- read.csv('/Users/yevashanperumal/Documents/Data Science Masters/2022/Local backup of Gdrive/Data/data with some cdw.csv')
+```
+
+```{r}
+head(df)
+```
+
+```{r}
+dim(df)
+```
+
+Drop the unnecessary columns
+
+```{r}
+cols_to_drop <- c(# Just didnt seem handy:
+                  'RecordID',
+                  'ProductCode',
+                  'DimGCSPartyKeyLifeCovered',
+                  'DimDateKeyInitiated','DimDateKeyFinalised','DimDateKeyAccepted'
+                  ,'UnderwritingInitiationDate','UnderwritingFinaliseDate',
+                  'UnderwritingCode',
+                  'UnderwritingTerritory',
+                  'UnderwritingDuration',
+                  'QuoteNumber' ,
+                  # because of high correlation/target leakage/they're informed by GammaGT:
+                  'LoadingPercentage','CoverLoadingAmount','HealthLoadingPercentage',
+                  # double check these are all for current app?could be previous:
+                  'CoverLoading','HealthLoadingIndicator','CoverLoadingIndicator',
+                  'UnderwritingOutcome','NoOfLoadingsApplied',
+                  #customer identifier:
+                   'LifeCoveredClientID'  
+                  )
+
+#drop columns
+df2 <- df %>% select(-all_of(cols_to_drop))
+
+#remove duplicate rows
+df2 <- df2 %>% distinct()
+
+dim(df2)
+```
+
+```{r}
+str(df2)
+```
+
+Lots of numeric values coming through as characters; More nulls will
+likely be introduced when I convert them
+
+```{r}
+char_to_numeric_list <- c( 
+'CurrentCoverAmount','CholesterolValue','GammaGTValue','CotinineValue',
+'BloodSugarValue','ClientBMIValue','DoctorBMIValue','SystolicBloodPressureValue',
+'DiastolicBloodPressureValue','RestingPulseValue','HeightValue','WeightValue',
+'NumberOfCigarettes','NumberOfFailedLevel1Evaluations','NumberOfFailedDetailEvaluations','NumberOfExclusions',    
+'NumberOfVerifications','NumberOfDeferrals','MonthlyIncome','MonthlyIncome_Override',
+'UnderwritingCreditAmount','InputMedium','CoverAmount',
+'PremiumRateCatDiscount','ReinsuranceRateCatDiscount','IntermediaryQualityDiscount',  
+'MonthlyIncome_Override2','AGE','ALL_BEN_COUNT','ALL_CONTRACT_COUNT','ANNUAL_INVESTMENT','AUM'
+)            
+df2 <- df2 %>% mutate_at(char_to_numeric_list, as.numeric)
+```
+
+```{r}
+missmap(df2)
+```
+
+```{r}
+colSums(is.na(df2))
+```
+
+Couple columns I could def drop(or maybe need to check vals before
+numeric conversion): - ManualDiscountIndicator - NumberOfVerifications -
+CotinineValue - InputMedium
+
+Some missing values for GammaGT; Some with like 50% missing. Maybe need
+to leave those out too.
+
+```{r}
+# Unique values for all variables in the dataframe
+
+# tab1 <- df2 %>% summarise_all(n_distinct)%>%t()
+# tab1 <- data.frame(tab1)
+# tab1 %>% arrange(tab1)
+```
+
+# Univariate exploration
+
+## Numeric Variables (and ones that should be)
+
+```{r}
+box_and_hist <- function(variable){
+    hist <- df2%>%ggplot(aes_string(x=variable))+geom_histogram()+
+            theme(axis.title.x=element_blank(),
+                  axis.title.y = element_text(size = 6),
+                  plot.title = element_text(size = 8))+
+            labs(title = paste('Histogram and Boxplot of',variable))
+    boxp <- df2%>%ggplot()+
+      geom_boxplot(aes_string(x=variable))+
+      theme(axis.title.x = element_text(size =8))
+    grid.arrange(hist,boxp,nrow=2)
+    
+    summary(df2 %>% select(variable))
+}
+
+# add option to create a filtered view?
+```
+
+```{r}
+countplot_explore <- function(input_variable){
+    bar <- df2%>%ggplot(aes_string(x=input_variable))+geom_bar()+
+      labs(title = paste('Countplot of ',input_variable))
+    print(input_variable)
+    print(sum(is.na(df2[input_variable])))
+    bar
+    # summary(df2 %>% select(variable))
+}
+
+# add option to create a filtered view?
+```
+
+```{r message=FALSE, warning=FALSE}
+num_cols <- df2 %>% select_if(is.numeric) %>% colnames()
+
+char_cols <- df2 %>% select_if(is.character) %>% colnames()
+```
+
+------------------------------------------------------------------------
+
+```{r}
+# CurrentCoverAmount
+box_and_hist(num_cols[1])
+```
+
+```{r}
+# CholesterolValue
+box_and_hist(num_cols[2])
+```
+
+Couple large outliers that need to be cleaned(maybe winsorised?).
+Probably data capture errors. Or those people are dead.
+
+```{r}
+# CotinineValue
+box_and_hist(num_cols[4])
+```
+
+Dont think I cna use this one by the number of missing values. I
+remember Tinashe saying that I should use the SmokerStatus ind instead.
+
+```{r}
+# BloodSugarValue
+box_and_hist(num_cols[5])
+```
+
+Need to take care of very large outliers. And the zero values.
+
+```{r}
+# ClientBMIValue
+box_and_hist(num_cols[6])
+```
+
+Need to take care of very large outliers. And the very small(impossible)
+values.
+
+```{r}
+# DoctorBMIValue
+box_and_hist(num_cols[7])
+```
+
+Same as above
+
+```{r}
+# DoctorBMIValue
+box_and_hist(num_cols[8])
+```
+
+Large outliers. Seems like there may be a lot of zero values; not sure
+if it affects the quality of the feature.
+
+```{r}
+# DoctorBMIValue
+box_and_hist(num_cols[9])
+```
+
+Same as systolic by the looks of it
+
+```{r}
+# RestingPulseValue
+box_and_hist(num_cols[10])
+```
+
+Outliers.
+
+```{r}
+# HeightValue
+box_and_hist(num_cols[11])
+```
+
+Outliers again. Maybe people using different scales. Probably a high
+correlation with BMI; not as much of an issue for tree based methods.
+Might need to be removed anyway? Ask Stefan why tree based methods are
+robust to highly correlated values.
+
+```{r}
+# WeightValue
+box_and_hist(num_cols[12])
+```
+
+Same as height
+
+```{r}
+# NumberOfCigarettes
+box_and_hist(num_cols[13])
+```
+
+Useless. All zero, need to drop.
+
+```{r}
+# NumberOfFailedLevel1Evaluations
+box_and_hist(num_cols[14])
+```
+
+Not terrible. Need to confirm what this feature means.
+
+```{r}
+# NumberOfFailedLevel1Evaluations
+box_and_hist(num_cols[15])
+
+#countplot
+```
+
+Same as above. Missing for about half the data though.
+
+```{r}
+# NumberOfExclusions
+box_and_hist(num_cols[16])
+
+# dim(df[which(df2$NumberOfExclusions>0),]) # only 5987 greater than zero
+```
+
+This one also seems like it might be full of zeroes and need to be
+dropped.
+
+```{r}
+# NumberOfVerifications
+box_and_hist(num_cols[17])
+
+#countplot?
+```
+
+Needs to confirm what this one means
+
+```{r}
+# NumberOfDeferrals
+box_and_hist(num_cols[18])
+```
+
+Also need to check what this means. Seems like I could use it though.
+
+```{r}
+# MonthlyIncome
+box_and_hist(num_cols[19])
+```
+
+Outliers skewing it. And about 16k missing values.
+
+```{r}
+# MonthlyIncome
+box_and_hist(num_cols[20])
+```
+
+Max value here looks like nonsense. Less missing vals than income fields
+above though.
+
+```{r}
+# UnderwritingCreditAmount
+box_and_hist(num_cols[21])
+```
+
+All zeroes; needs to drop
+
+```{r}
+# IRPCode
+box_and_hist(num_cols[22])
+
+# Countplot?This looks like a category
+```
+
+```{r}
+# InputMedium
+box_and_hist(num_cols[23])
+```
+
+All nulls, need to drop.
+
+```{r}
+# EntryANB
+box_and_hist(num_cols[24])
+```
+
+Seems usable, but now to actually find out what it is.
+
+```{r}
+# CoverAmount
+box_and_hist(num_cols[25])
+```
+
+Big values, but those are possible. Maybe banding this to take care of
+them e.g. \>R5mil (maybe consider for above values too)
+
+```{r}
+# EducationID
+box_and_hist(num_cols[26])
+
+# This looks like a category fields too
+```
+
+```{r}
+# PremiumRateCatDiscount
+box_and_hist(num_cols[27])
+```
+
+Lots of nulls.lots of zeroes. also not siure if it is something
+determined by gamma GT/med tests. But think it might be a drop. Looks
+like they go in 2.5% jumps. Category field like Wang2021 did?
+
+```{r}
+# ReinsuranceRateCatDiscount
+box_and_hist(num_cols[28])
+```
+
+Same as above. Lots of zeroes and nulls.
+
+```{r}
+# IntermediaryQualityDiscount
+box_and_hist(num_cols[29])
+```
+
+Seems more useful than above two, but still lots of zero vallues. Maybe
+an indicator column and then see how many non zeroes?
+
+```{r}
+# ManualDiscountIndicator
+box_and_hist(num_cols[30])
+
+ # Actually check if the field is a Y/N?
+unique(df$ManualDiscountIndicator)
+```
+
+Empty, drop. Actually check if the field is a Y/N?
+
+```{r}
+# MonthlyIncome_Override2
+box_and_hist(num_cols[31])
+```
+
+MonthlyIncome_Override2. need to check if this is a duplicate of
+MonthlyIncome_Override; maybe came from different tables.
+
+```{r}
+# AGE
+box_and_hist(num_cols[32])
+```
+
+Key variable. OUtliers again.
+
+```{r}
+# ALL_BEN_COUNT
+box_and_hist(num_cols[33])
+```
+
+CDW; lots of nulls though
+
+```{r}
+# ALL_CONTRACT_COUNT
+box_and_hist(num_cols[34])
+```
+
+Same as above
+
+```{r}
+# ANNUAL_INVESTMENT
+box_and_hist(num_cols[35])
+```
+
+Same as above;
+
+```{r}
+# AUM
+box_and_hist(num_cols[36])
+```
+
+Same as above
+
+------------------------------------------------------------------------
+
+## Categorical Plots
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[1])
+```
+
+Can probably group Acell Only Not sure it would be super relevant to
+Gamma GT
+
+```{r}
+# SmokerStatus
+countplot_explore(char_cols[2])
+```
+
+Def use.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[3])
+
+sum(is.na(df2$OccupationClassCode))
+```
+
+Def use. Important from underwriting criteria persepctive
+
+```{r}
+# OccupationDescription
+# char_cols[4]
+head(df$OccupationDescription)
+sum(is.na(df$OccupationDescription))
+```
+
+Lots of text here. Mayhaps some nlp? could be interesting;
+
+```{r}
+# DisabilityIncomeClass
+countplot_explore(char_cols[5])
+```
+
+Could be an interesting var. SOme spread of data, but majority unknown.
+
+```{r}
+# AutoDeclinedIndicator
+countplot_explore(char_cols[6])
+```
+
+Yeah this doesnt look super helpful.Drop I think
+
+```{r}
+# AutoUnderwrittenIndicator
+countplot_explore(char_cols[7])
+```
+
+Same as above.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[8])
+```
+
+This one looks like it could be more helpful. THink I can use it.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[9])
+```
+
+Customer had previous NTU more likely to have higher/lower gamma GT?
+Need to double checkj the definition of this field.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[10])
+```
+
+Seems useful, but need ot check what this is.
+
+```{r}
+# ProductSoldType
+# countplot_explore(char_cols[11])
+
+head(df$UnderwritingPostalCode)
+length(unique(df$UnderwritingPostalCode))
+```
+
+Proxy for location perhaps. could be handy. I do need to double check how
+many were recorded as 'Unkown' to see if this is very usable.
+
+```{r}
+# ExclusionIndicator
+countplot_explore(char_cols[12])
+```
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[13])
+```
+
+Hmm looks better populated than that other product field I had above.
+Maybe I can ditch that and keep this.
+
+```{r}
+# EducationID_Override
+countplot_explore(char_cols[14])
+```
+
+Check with the notmal education fields which to use. Maybe I can just
+combine them, and when they dont match take this one.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[15])
+
+unique(df$IncomeCoverBand)
+```
+
+Coverage here looks weird. Need to compare with the other income fields
+and see what I should use for Income.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[16])
+```
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[17])
+```
+
+Empty, drop.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[18])
+```
+
+From CDW; looking good.
+
+```{r}
+# PROVINCE
+countplot_explore(char_cols[19])
+```
+
+From CDW; looking good.
+
+```{r}
+# FARMER_IND
+countplot_explore(char_cols[20])
+```
+
+Some farmers up in here yo. Unkowns up in here too.
+
+```{r}
+# PROF_MARKET_IND
+countplot_explore(char_cols[21])
+```
+
+Also some professionals around town.Unkowns too.
+
+```{r}
+# PUBLIC_SECTOR_IND
+countplot_explore(char_cols[22])
+```
+
+Also some civil servants around town.Unkowns too.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[23])
+```
+
+Some values. Need to grou some of these together for sure.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[24])
+```
+
+Fair chunk of NA in here, but think could be usable. NOt sure how it's
+handy related to GammaGT though.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[25])
+```
+
+Marriage=high blood pressure? OK,boomer.
+
+```{r}
+# ProductSoldType
+countplot_explore(char_cols[26])
+```
+
+More unkowns than expected.
+
+```{r}
+# 
+countplot_explore('ManualDiscountIndicator')
+```
+Eh seems pretty empty; probably drop.
+
+# Target Variable
+
+```{r}
+df2$GammaGTValue <-  as.integer(df2$GammaGTValue)
+df2 %>% filter(GammaGTValue<200) %>%  ggplot(aes(x=GammaGTValue))+geom_histogram(binwidth = 10)
+```
+
+Some really weird large outliers than need to be taken care of. Also
+some NAs introduced when converting to character.
+
+# End

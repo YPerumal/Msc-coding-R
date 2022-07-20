@@ -1,0 +1,28 @@
+
+Import Libraries
+```{r}
+library(tidyverse)
+```
+
+data import
+```{r}
+df_wide <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/wide_data.csv')
+
+df_long <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/long_data.csv')
+```
+
+
+```{r}
+# Gamma GT dist
+df_long %>% select(Gamm) %>%  ggplot(aes(x=GammaGTValue))+geom_histogram(binwidth = 10)
+```
+
+```{r}
+# Correlation plot for highly correlated variables
+```
+
+
+```{r}
+# Naively filling in the wide set?
+```
+

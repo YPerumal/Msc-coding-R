@@ -1,0 +1,327 @@
+---
+title: "PreProcessing"
+author: "Yevashan Perumal"
+date: '2022-06-11'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Package Imports
+```{r}
+# library imports
+library(tidyverse)
+library(gridExtra)
+library(Amelia)
+```
+
+## Data Import
+```{r}
+df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+```
+
+## Columns dropped from EDA
+```{r}
+# dropped columns from EDA
+cols_to_drop <- c(# Just didnt seem handy:
+                  'RecordID',
+                  'ProductCode',
+                  'DimGCSPartyKeyLifeCovered',
+                  'DimDateKeyInitiated','DimDateKeyFinalised','DimDateKeyAccepted'
+                  ,'UnderwritingInitiationDate','UnderwritingFinaliseDate',
+                  'UnderwritingCode',
+                  'UnderwritingTerritory',
+                  'UnderwritingDuration',
+                  'QuoteNumber' ,
+                  # because of high correlation/target leakage/they're informed by GammaGT:
+                  'LoadingPercentage','CoverLoadingAmount','HealthLoadingPercentage',
+                  # double check these are all for current app?could be previous:
+                  'CoverLoading','HealthLoadingIndicator','CoverLoadingIndicator',
+                  'UnderwritingOutcome','NoOfLoadingsApplied',
+                  #customer identifier:
+                   'LifeCoveredClientID'
+                  )
+
+#drop columns
+df2 <- df %>% select(-all_of(cols_to_drop))
+
+#remove duplicate rows
+df2 <- df2 %>% distinct()
+```
+The columns above just looked useless from eyeballing and seeing what they are. Dropping duplicates because there were multiple things again.
+
+## Converting char to numeric for appropriate columns
+```{r}
+char_to_numeric_list <- c( 
+'CurrentCoverAmount','CholesterolValue','GammaGTValue','CotinineValue',
+'BloodSugarValue','ClientBMIValue','DoctorBMIValue','SystolicBloodPressureValue',
+'DiastolicBloodPressureValue','RestingPulseValue','HeightValue','WeightValue',
+'NumberOfCigarettes','NumberOfFailedLevel1Evaluations','NumberOfFailedDetailEvaluations','NumberOfExclusions',    
+'NumberOfVerifications','NumberOfDeferrals','MonthlyIncome','MonthlyIncome_Override',
+'UnderwritingCreditAmount','InputMedium','CoverAmount',
+'PremiumRateCatDiscount','ReinsuranceRateCatDiscount','IntermediaryQualityDiscount',  
+'MonthlyIncome_Override2','AGE','ALL_BEN_COUNT','ALL_CONTRACT_COUNT','ANNUAL_INVESTMENT','AUM'
+)            
+df3 <- df2 %>% mutate_at(char_to_numeric_list, as.numeric)
+```
+
+## Drop some columns after EDA
+```{r}
+post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions',
+                        'UnderwritingCreditAmount','InputMedium','ManualDiscountIndicator',
+                        'MonthlyIncome_Override2','MonthlyIncome',
+                        'PremiumRateCatDiscount',#not a lot of variation here, about 1k rows
+                        'ReinsuranceRateCatDiscount', #not a lot of variation here, about 1k rows
+                        'IntermediaryQualityDiscount', #not a lot of variation here, about 1k rows
+                        'AutoDeclinedIndicator', #cat column, not much variation
+                        'AutoUnderwrittenIndicator', #cat column, not much variation
+                        'UnderwritingPostalCode', # lots of nulls
+                        'IncomeCoverBand', # everything just 100k>
+                        'IntermediaryQualityCategory' ,# empty
+                        'PUBLIC_SECTOR_SOURCE', # just didnt think it would be handy
+                        'ManualDiscountIndicator' #empty
+                        )
+df3 <- df3 %>% select(-all_of(post_eda_drop_cols))
+```
+
+
+## Deal with nulls generated in the numeric conversion
+```{r}
+# drop all the GammaGT values that are null
+df3 <- df3 %>% filter(is.na(GammaGTValue)==F)
+
+# drop all the GammaGT values that are null; 1 row in df2
+df3 <- df3 %>% filter(is.na(CurrentCoverAmount)==F)
+
+# drop all the RestingPulseValue values that are null; 533 row in df2
+df3 <- df3 %>% filter(is.na(RestingPulseValue)==F)
+
+# drop all the NumberOfFailedLevel1Evaluations values that are null; 48 row in df2;0 already possible value
+df3 <- df3 %>% filter(is.na(NumberOfFailedLevel1Evaluations)==F)
+
+# drop all the NumberOfDeferrals values that are null; 48 row in df2
+df3 <- df3 %>% filter(is.na(NumberOfDeferrals)==F)
+
+# drop all the MonthlyIncome_Override values that are null; 1377 row in df3
+df3 <- df3 %>% filter(is.na(MonthlyIncome_Override)==F)
+```
+
+## Fill Nulls with appropriate values for numeric and character columns
+```{r}
+# Fill nulls with zeros; not one of the values existing so making choice here.
+df3$NumberOfFailedDetailEvaluations[is.na(df3$NumberOfFailedDetailEvaluations)]= 0
+
+# same as above; most have two; no zeros so making choice
+df3$NumberOfVerifications[is.na(df3$NumberOfVerifications)] = 0
+
+# EducationID_Override two values to change to mode there's just 2 rows
+df3 <- df3 %>% mutate(EducationID_Override = replace(EducationID_Override, EducationID_Override == 'NULL', '1'))
+
+# ASS_ETHNIC_GROUP replace blank with unknown
+df3 <- df3 %>% mutate(ASS_ETHNIC_GROUP = replace(ASS_ETHNIC_GROUP, ASS_ETHNIC_GROUP == '', 'UNKNOWN'))
+
+# PROVINCE replace blank with unknown
+df3 <- df3 %>% mutate(PROVINCE = replace(PROVINCE, PROVINCE == '', 'UNKNOWN'))
+
+# FARMER_IND replace blank with unknown
+df3 <- df3 %>% mutate(FARMER_IND = replace(FARMER_IND, FARMER_IND == '', 'UNKNOWN'))
+
+# PROF_MARKET_IND replace blank with unknown
+df3 <- df3 %>% mutate(PROF_MARKET_IND = replace(PROF_MARKET_IND, PROF_MARKET_IND == '', 'UNKNOWN'))
+
+# PROVINCE replace blank with unknown
+df3 <- df3 %>% mutate(PUBLIC_SECTOR_IND = replace(PUBLIC_SECTOR_IND, PUBLIC_SECTOR_IND == '', 'UNKNOWN'))
+
+
+# PROVINCE replace blank with unknown; quite a few unkown, might not be usable
+df3 <- df3 %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == '', 'UNKNOWN'))
+df3 <- df3 %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == 'N/A', 'UNKNOWN'))
+
+# MARITAL_STATUS replace blank with unknown; quite a few unkown, might not be usable
+df3 <- df3 %>% mutate(MARITAL_STATUS = replace(MARITAL_STATUS, MARITAL_STATUS == '', 'UNKNOWN'))
+
+# MARITAL_STATUS replace blank with unknown; quite a few unkown, might not be usable
+df3 <- df3 %>% mutate(GENDER = replace(GENDER, GENDER == '', 'UNKNOWN'))
+
+################################################################################
+# code to investigate numeric columns
+# tmp <- data.frame(df2$IntermediaryQualityDiscount,df3$IntermediaryQualityDiscount)
+# tmp %>% filter(is.na(df3.IntermediaryQualityDiscount)==T)
+# print(table(df2$IntermediaryQualityDiscount))
+```
+
+
+```{r}
+# Find all numeric columns 
+num_cols <- df3 %>% select_if(is.numeric)
+```
+
+```{r}
+# Find all char columns
+char_cols <- df3 %>% select_if(is.character)
+
+# null_counts <- char_cols %>% 
+#     summarise_all(funs(sum(as.numeric(is.na(.)), na.rm=TRUE))) %>% 
+#     collect()  %>% 
+#     select_if(funs(. > 0))
+# 
+# null_counts
+```
+
+```{r}
+# df3 %>% select(MARITAL_STATUS) %>% table() %>% as.data.frame()
+```
+
+```{r}
+# check for remaining null columns
+null_counts <- num_cols %>% 
+    summarise_all(funs(sum(as.numeric(is.na(.)), na.rm=TRUE))) %>% 
+    collect()  %>% select_if(funs(. > 0)) %>% 
+    colnames()
+
+# The only columns with nulls are the CDW ones. Going to make a two datasets with them; long and wide;
+```
+
+## Remove Outliers
+```{r}
+# create detect outlier function
+detect_outlier <- function(x) {
+ 
+    # calculate first quantile
+    Quantile1 <- quantile(x, probs=.25)
+ 
+    # calculate third quantile
+    Quantile3 <- quantile(x, probs=.75)
+ 
+    # calculate inter quartile range
+    IQR = Quantile3-Quantile1
+ 
+    # return true or false
+    x > Quantile3 + (IQR*1.5) | x < Quantile1 - (IQR*1.5)
+}
+ 
+# create remove outlier function
+remove_outlier <- function(dataframe,
+                            columns=names(dataframe)) {
+ 
+    # for loop to traverse in columns vector
+    for (col in columns) {
+ 
+        # remove observation if it satisfies outlier function
+        dataframe <- dataframe[!detect_outlier(dataframe[[col]]), ]
+    }
+ 
+    # return dataframe
+    print("Remove outliers")
+    print(dataframe)
+}
+ 
+df4 <- remove_outlier(df3, columns = names(num_cols %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)))
+```
+
+```{r}
+#remove duplicate rows
+df4 <- df4 %>% distinct()
+```
+At the end remove do one last distinct row check.
+
+```{r}
+# Change all categorical to factor
+print(names(char_cols))
+```
+```{r}
+t1 <-  c("ProductSoldType","SmokerStatus","AutoDeferredIndicator","NTUIndicator","LOAIndicator","ExclusionIndicator",    "AcceleratorIndicator","ASS_ETHNIC_GROUP","PROVINCE","FARMER_IND","PROF_MARKET_IND","PUBLIC_SECTOR_IND",
+"PUBLIC_SECTOR_TYPE","MARITAL_STATUS","GENDER")        
+
+# coerce char columns to factor, no order
+df4[t1] <- lapply(df4[t1], factor) 
+```
+
+```{r}
+# Ordinal factors
+
+# "OccupationClassCode"  
+df4$OccupationClassCode <- factor(df4$OccupationClassCode, order = TRUE, 
+                                    levels = c("-","A", "B", "C","D","E"))
+
+# "DisabilityIncomeClass"  
+df4$DisabilityIncomeClass <- factor(df4$DisabilityIncomeClass, order = TRUE, 
+                                    levels = c("Unknown","1", "1*", "2","3"))
+
+# "EducationID_Override"  
+df4$EducationID_Override <- factor(df4$EducationID_Override, order = TRUE, 
+                                    levels = c("-1", "1", "2","3","4"))
+
+ # "SumAssuredBand"
+df4$SumAssuredBand <- factor(df4$SumAssuredBand, order = TRUE, 
+                                    levels = c( "A: R0.00 - R100,000.00"   , 
+                                                "B: R100,000.00 - R200,000.00"  , 
+                                                "C: R200,000.00 - R300,000.00"    ,
+                                                 "D: R300,000.00 - R400,000.00"  ,
+                                                 "E: R400,000.00 - R500,000.00"   ,
+                                                 "F: R500,000.00 - R600,000.00" ,
+                                                 "G: R600,000.00 - R700,000.00" ,
+                                                "H: R700,000.00 - R800,000.00"  ,
+                                                 "I: R800,000.00 - R900,000.00"  ,
+                                                   "J: R900,000.00 - R1,000,000.00"  ,
+                                                  "K: R1,000,000.00 - R1,500,000.00",
+                                                 "L: R1,500,000.00 - R2,000,000.00",
+                                                 "M: R2,000,000.00 - R2,500,000.00"
+                                                ))
+
+```
+
+
+```{r}
+# Text description field, probably need to drop
+df4 <- df4 %>% select(-OccupationDescription)
+```
+
+```{r}
+str(df4)
+```
+
+# last check for nulls
+
+```{r}
+# Find all numeric columns 
+num_cols2<- df4 %>% select_if(is.numeric)
+null_counts <- num_cols2 %>% 
+    summarise_all(funs(sum(as.numeric(is.na(.)), na.rm=TRUE))) %>% 
+    collect()  %>% select_if(funs(. > 0)) %>% 
+    colnames()
+null_counts
+```
+
+```{r}
+colSums(is.na(df4))
+```
+
+
+At this points only the CDW numeric columns have null values remaining.
+Going to be making two datasets now:
+
+```{r}
+# dataset with CDW columns, but now nulls
+df_wide <- df4 %>% na.omit()
+dim(df_wide)
+
+write.csv(df_wide,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/wide_data.csv", row.names=FALSE)
+
+```
+
+```{r}
+# dataset dropping CDW columns, but with more rows. 
+df_long <- df4 %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)
+
+dim(df_long)
+
+write.csv(df_long,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/long_data.csv", row.names=FALSE)
+```
+
+```{r}
+save(df_wide,df_long,file = "/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
+```
+
