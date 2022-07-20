@@ -41,7 +41,9 @@ cols_to_drop <- c(# Just didnt seem handy:
                   'CoverLoading','HealthLoadingIndicator','CoverLoadingIndicator',
                   'UnderwritingOutcome','NoOfLoadingsApplied',
                   #customer identifier:
-                   'LifeCoveredClientID'
+                   'LifeCoveredClientID',
+                  # no varation, found in modelling stage
+                  'NumberOfVerifications'
                   )
 
 #drop columns
@@ -58,8 +60,7 @@ char_to_numeric_list <- c(
 'CurrentCoverAmount','CholesterolValue','GammaGTValue','CotinineValue',
 'BloodSugarValue','ClientBMIValue','DoctorBMIValue','SystolicBloodPressureValue',
 'DiastolicBloodPressureValue','RestingPulseValue','HeightValue','WeightValue',
-'NumberOfCigarettes','NumberOfFailedLevel1Evaluations','NumberOfFailedDetailEvaluations','NumberOfExclusions',    
-'NumberOfVerifications','NumberOfDeferrals','MonthlyIncome','MonthlyIncome_Override',
+'NumberOfCigarettes','NumberOfFailedLevel1Evaluations','NumberOfFailedDetailEvaluations','NumberOfExclusions',  'NumberOfDeferrals','MonthlyIncome','MonthlyIncome_Override',
 'UnderwritingCreditAmount','InputMedium','CoverAmount',
 'PremiumRateCatDiscount','ReinsuranceRateCatDiscount','IntermediaryQualityDiscount',  
 'MonthlyIncome_Override2','AGE','ALL_BEN_COUNT','ALL_CONTRACT_COUNT','ANNUAL_INVESTMENT','AUM'
@@ -114,7 +115,7 @@ df3 <- df3 %>% filter(is.na(MonthlyIncome_Override)==F)
 df3$NumberOfFailedDetailEvaluations[is.na(df3$NumberOfFailedDetailEvaluations)]= 0
 
 # same as above; most have two; no zeros so making choice
-df3$NumberOfVerifications[is.na(df3$NumberOfVerifications)] = 0
+# df3$NumberOfVerifications[is.na(df3$NumberOfVerifications)] = 0
 
 # EducationID_Override two values to change to mode there's just 2 rows
 df3 <- df3 %>% mutate(EducationID_Override = replace(EducationID_Override, EducationID_Override == 'NULL', '1'))
@@ -286,17 +287,30 @@ str(df4)
 # last check for nulls
 
 ```{r}
-# Find all numeric columns 
+# # Find all numeric columns 
 num_cols2<- df4 %>% select_if(is.numeric)
-null_counts <- num_cols2 %>% 
-    summarise_all(funs(sum(as.numeric(is.na(.)), na.rm=TRUE))) %>% 
-    collect()  %>% select_if(funs(. > 0)) %>% 
+null_counts <- num_cols2 %>%
+    summarise_all(funs(sum(as.numeric(is.na(.)), na.rm=TRUE))) %>%
+    collect()  %>% select_if(funs(. > 0)) %>%
     colnames()
 null_counts
 ```
 
 ```{r}
 colSums(is.na(df4))
+```
+
+
+Deal with highly correlated variables(should've done a corrplot in the EDA)
+```{r}
+# library(caret)
+# df_corr = cor(df4 %>% select_if(is.numeric) %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM))
+# # df_corr = cor(df4)
+# 
+# hc = findCorrelation(df_corr, cutoff=0.6) # putt any value as a "cutoff"
+# hc = sort(hc)
+# reduced_Data = df1[,-c(hc)]
+# print (reduced_Data)
 ```
 
 

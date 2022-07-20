@@ -26,6 +26,28 @@ library(rpart)
 load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
 ```
 
+
+
+```{r}
+#finding zero variance columns
+# zv <- apply(df_long %>% select_if(is.numeric), 2, function(x) length(unique(x)) == 1)
+# sum(zv)
+# zv
+
+# Find names of highly correlated columns
+# df_corr = cor(df_long %>% select_if(is.numeric))
+# hc = findCorrelation(df_corr, cutoff=0.6) # putt any value as a "cutoff"
+# hc = sort(hc)
+# #the name of the columns chosen above
+# to_be_removed <- colnames(df_corr)[hc]
+
+# Remove highly correlated columns
+#Not sure if all should be removed or just some.
+df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
+```
+
+
+
 ## Train-Test Split for df_long
 ```{r}
 # Create the training and test datasets
@@ -169,7 +191,8 @@ imput_data <- imput_train_df %>% bind_rows(imput_test_df)
 system.time(
 imp <- mice(imput_data,seed = 42) 
 )
-imp <- mice(head(imput_data,31500),seed = 42) 
+# imp <- mice(head(imput_data,31500),seed = 42) 
+imp <- mice(imput_data,seed = 42) 
 print(imp)
 
 imp$imp$GammaGTValue
