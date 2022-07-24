@@ -189,8 +189,11 @@ system.time(
 imp <- mice(imput_data,seed = 42) 
 )
 # imp <- mice(head(imput_data,31500),seed = 42) 
+
+# removing columns like I did for Amelia didnt work
 imp <- mice(imput_data[,1:11],seed = 42) #ran into problems at the 11th column here
-imp <- mice(imput_data[,1:10],seed = 42) 
+test <- imput_data_dummy_var %>% select(-NumberOfVerifications,-'ProductSoldType_Standalone With Accelerator', -SmokerStatus_SMOKER, -OccupationClassCode_E, -DisabilityIncomeClass_3, -AutoDeferredIndicator_Y, -NTUIndicator_Y, -LOAIndicator_Y, -ExclusionIndicator_Y,- AcceleratorIndicator_Y, -EducationID_Override_4, -'SumAssuredBand_M: R2,000,000.00 - R2,500,000.00', -ASS_ETHNIC_GROUP_WHITE, -'PROVINCE_W CAPE',- FARMER_IND_Y, -PROF_MARKET_IND_UNKNOWN, -PROF_MARKET_IND_Y, -PUBLIC_SECTOR_IND_UNKNOWN, -PUBLIC_SECTOR_IND_Y, -'PUBLIC_SECTOR_TYPE_WESTERN-CAPE PROVINCIAL GOVERMENT', -MARITAL_STATUS_WIDOWED, -GENDER_MALE,-GENDER_UNKNOWN)
+imp <- mice(test,m=1,seed = 42) 
 print(imp)
 
 imp$imp$GammaGTValue
