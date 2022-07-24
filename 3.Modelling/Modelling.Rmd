@@ -24,11 +24,8 @@ library(rpart)
 
 ```{r}
 load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
-```
 
 
-
-```{r}
 #finding zero variance columns
 # zv <- apply(df_long %>% select_if(is.numeric), 2, function(x) length(unique(x)) == 1)
 # sum(zv)
@@ -43,7 +40,7 @@ load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/
 
 # Remove highly correlated columns
 #Not sure if all should be removed or just some.
-df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
+df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue,-NumberOfVerifications)
 ```
 
 
@@ -192,7 +189,8 @@ system.time(
 imp <- mice(imput_data,seed = 42) 
 )
 # imp <- mice(head(imput_data,31500),seed = 42) 
-imp <- mice(imput_data,seed = 42) 
+imp <- mice(imput_data[,1:11],seed = 42) #ran into problems at the 11th column here
+imp <- mice(imput_data[,1:10],seed = 42) 
 print(imp)
 
 imp$imp$GammaGTValue
@@ -202,6 +200,40 @@ imp$imp$GammaGTValue
 Error here. looks to be with highly correlted variables due to the factor vars I have. Need to either decide to remove, or use different methods for those ones.
 looks like it starts acting up at more than 31500 rows. Need to investigate further what's gonig on here.        
  ˆ
+ 
+ 
+ 
+```{r}
+library(Amelia)
+library(Rcpp)
+```
+assumes varaibles follow multivariate normal distributions. Some transfaormations may be needed?
+```{r}
+library('fastDummies')
+
+imput_data_dummy_var <- dummy_cols(imput_data, select_columns = c('ProductSoldType', 'SmokerStatus', 'OccupationClassCode', 'DisabilityIncomeClass', 'AutoDeferredIndicator', 'NTUIndicator', 'LOAIndicator', 'ExclusionIndicator', 'AcceleratorIndicator', 'EducationID_Override', 'SumAssuredBand', 'ASS_ETHNIC_GROUP', 'PROVINCE', 'FARMER_IND', 'PROF_MARKET_IND', 'PUBLIC_SECTOR_IND', 'PUBLIC_SECTOR_TYPE', 'MARITAL_STATUS', 'GENDER'),
+           remove_selected_columns = TRUE)
+```
+ 
+ 
+```{r}
+amelia(imput_data_dummy_var %>% select(-NumberOfVerifications,-'ProductSoldType_Standalone With Accelerator', -SmokerStatus_SMOKER, -OccupationClassCode_E, -DisabilityIncomeClass_3, -AutoDeferredIndicator_Y, -NTUIndicator_Y, -LOAIndicator_Y, -ExclusionIndicator_Y,- AcceleratorIndicator_Y, -EducationID_Override_4, -`SumAssuredBand_M: R2,000,000.00 - R2,500,000.00`, -ASS_ETHNIC_GROUP_WHITE, -`PROVINCE_W CAPE`,- FARMER_IND_Y, -PROF_MARKET_IND_UNKNOWN, -PROF_MARKET_IND_Y, -PUBLIC_SECTOR_IND_UNKNOWN, -PUBLIC_SECTOR_IND_Y, -`PUBLIC_SECTOR_TYPE_WESTERN-CAPE PROVINCIAL GOVERMENT`, -MARITAL_STATUS_WIDOWED, -GENDER_MALE,-GENDER_UNKNOWN),m=5)
+```
+ 
+ 
+```{r}
+library(missForest)
+```
+
+```{r}
+
+```
+
+```{r}
+amelia(imput_data, m = 1)
+```
+
+ 
 ```{r}
 save.image("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
 ```
