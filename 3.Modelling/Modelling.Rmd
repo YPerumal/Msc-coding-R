@@ -188,7 +188,9 @@ imput_data <- imput_train_df %>% bind_rows(imput_test_df)
 system.time(
 imp <- mice(imput_data,seed = 42) 
 )
-# imp <- mice(head(imput_data,31500),seed = 42) 
+imp <- mice(imput_data,seed = 42)
+imp <- mice(imput_data,method='cart',seed = 42)
+
 
 # removing columns like I did for Amelia didnt work
 imp <- mice(imput_data[,1:11],seed = 42) #ran into problems at the 11th column here
