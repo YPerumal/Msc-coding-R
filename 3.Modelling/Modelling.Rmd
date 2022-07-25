@@ -232,6 +232,10 @@ library(missForest)
 miss_forest <- missForest(imput_data,maxiter=2,ntree=5)
 ```
 
+```{r}
+sum(is.na(miss_forest$ximp$GammaGTValue))
+```
+
 
 ```{r}
 ?missForest
