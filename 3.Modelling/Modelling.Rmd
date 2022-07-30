@@ -8,6 +8,7 @@ library(caret)
 library(randomForest)
 library(ggplot2)
 library(rpart)
+library(tree)
 ```
 
 ## Import Data
@@ -18,12 +19,14 @@ library(rpart)
 ```
 
 ```{r}
-# load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
+load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
+
+df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
 ```
 
 
 ```{r}
-load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+# load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
 
 
 #finding zero variance columns
@@ -40,10 +43,8 @@ load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/
 
 # Remove highly correlated columns
 #Not sure if all should be removed or just some.
-df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue,-NumberOfVerifications)
+# df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue,-NumberOfVerifications)
 ```
-
-
 
 ## Train-Test Split for df_long
 ```{r}
@@ -65,36 +66,65 @@ y_test <- test_df %>% select(GammaGTValue)
 ```
 
 ## Decision Tree
+
+Rpart and Caret
 ```{r}
-# Random forest
-# Set train control for cross-val
-dt_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = F)
-
-# #rpart
-# dt_grid <- expand.grid(cp = c(5,1)
-#                        ) #Default for regression is 5. Controls tree size.
-# # rpart2
-# dt_grid <- expand.grid(maxdepth = c(5,10,20)
-#                        ) #Default for regression is 5. Controls tree size.
-
-set.seed(42)
-dt_gridsearch <- train(GammaGTValue ~ ., 
-                       data = train_df,
-                       method = 'rpart',
-                       trControl = dt_ctrl
-                       # ,tuneGrid = dt_grid #Here is the grid
-                       ) 
-
-# dt_gridsearch$bestTune
-cp <- dt_gridsearch$bestTune[[1]]
-
-# train a final model to get variable importance plot
-library(rpart)
-dt_final <-  rpart(GammaGTValue ~ ., data = train_df,cp=cp)
-#Predictions
-dt_grid_pred <- predict(dt_final, newdata = test_df)
-dt_rmse <-  sqrt(mean((test_df$GammaGTValue- dt_grid_pred)^2))
+# # Random forest
+# # Set train control for cross-val
+# dt_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = F)
+# 
+# # #rpart
+# # dt_grid <- expand.grid(cp = c(5,1)
+# #                        ) #Default for regression is 5. Controls tree size.
+# # # rpart2
+# # dt_grid <- expand.grid(maxdepth = c(5,10,20)
+# #                        ) #Default for regression is 5. Controls tree size.
+# 
+# set.seed(42)
+# dt_gridsearch <- train(GammaGTValue ~ ., 
+#                        data = train_df,
+#                        method = 'rpart',
+#                        trControl = dt_ctrl
+#                        # ,tuneGrid = dt_grid #Here is the grid
+#                        ) 
+# 
+# # dt_gridsearch$bestTune
+# cp <- dt_gridsearch$bestTune[[1]]
+# 
+# # train a final model to get variable importance plot
+# library(rpart)
+# dt_final <-  rpart(GammaGTValue ~ ., data = train_df,cp=cp)
+# #Predictions
+# dt_grid_pred <- predict(dt_final, newdata = test_df)
+# dt_rmse <-  sqrt(mean((test_df$GammaGTValue- dt_grid_pred)^2))
 ```
+
+Using the Trees Library
+```{r}
+set.seed(42)
+
+tree_model <- tree(GammaGTValue ~ ., data=train_df)
+summary(tree_model)
+
+plot(tree_model)
+text(tree_model, cex=0.8)
+
+# cross validation
+cv_tree <- cv.tree(tree_model)
+plot(cv_tree$size, cv_tree$dev, type = 'b')
+
+## pruning
+prune_tree <- prune.tree(tree_model, best = 2)
+plot(prune_tree)
+text(prune_tree, pretty=0, cex=0.8)
+
+tree_yhat<- predict(tree_model, newdata=x_test)
+tree_res <- data.frame(tree_yhat,y_test)
+plot(tree_res$y_test, tree_res$tree_yhat)
+
+tree_rmse <- sqrt(mean((tree_yhat-y_test$GammaGTValue)^2))# MSE
+```
+
 
 ## Random Forest Using Caret
 ```{r}
@@ -185,21 +215,23 @@ imput_data <- imput_train_df %>% bind_rows(imput_test_df)
 
 ## MICE
 ```{r}
-system.time(
-imp <- mice(imput_data,seed = 42) 
-)
-imp <- mice(imput_data,seed = 42)
-imp <- mice(imput_data,method='cart',seed = 42)
+# system.time(
+# imp <- mice(imput_data,seed = 42) 
+# )
+imp <- mice(imput_data,seed = 100)
+# imp <- mice(imput_data,method='cart',seed = 42)
 
 
 # removing columns like I did for Amelia didnt work
-imp <- mice(imput_data[,1:11],seed = 42) #ran into problems at the 11th column here
+# imp <- mice(imput_data[,1:11],seed = 42) #ran into problems at the 11th column here
 
-test <- imput_data %>% select_if(is.numeric)
-imp <- mice(test,seed = 42)
+# this works
+# test <- imput_data %>% select_if(is.numeric)
+
+# imp <- mice(test,seed = 42)
 
 
-imp$imp$GammaGTValue
+# imp$imp$GammaGTValue
 # meth = init$method
 # predM = init$predictorMatrix
 ```
