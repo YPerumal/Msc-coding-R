@@ -21,6 +21,13 @@ library(missForest)
 ## Import Data
 
 ```{r}
+# Mac
+# load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
+
+# Windows load tables saved as Rdata to preserve types
+load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
+
+
 #finding zero variance columns
 # zv <- apply(df_long %>% select_if(is.numeric), 2, function(x) length(unique(x)) == 1)
 # sum(zv)
@@ -33,18 +40,11 @@ library(missForest)
 # #the name of the columns chosen above
 # to_be_removed <- colnames(df_corr)[hc]
 
-```
-
-```{r}
-# Mac
-# load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
-
-# Windows load tables saved as Rdata to preserve types
-load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
 
 # Remove highly correlated columns
 #Not sure if all should be removed or just some.
 df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
+
 ```
 
 ```{r}
