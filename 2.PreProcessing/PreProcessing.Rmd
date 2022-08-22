@@ -19,8 +19,17 @@ library(Amelia)
 
 ## Data Import
 ```{r}
-df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+# Mac
+# df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+
+# Windows
+df <- read.csv('C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
 ```
+
+```{r}
+sum(is.na(as.numeric(df$GammaGTValue)))
+```
+
 
 ## Columns dropped from EDA
 ```{r}
@@ -232,6 +241,8 @@ At the end remove do one last distinct row check.
 # Change all categorical to factor
 print(names(char_cols))
 ```
+
+
 ```{r}
 t1 <-  c("ProductSoldType","SmokerStatus","AutoDeferredIndicator","NTUIndicator","LOAIndicator","ExclusionIndicator",    "AcceleratorIndicator","ASS_ETHNIC_GROUP","PROVINCE","FARMER_IND","PROF_MARKET_IND","PUBLIC_SECTOR_IND",
 "PUBLIC_SECTOR_TYPE","MARITAL_STATUS","GENDER")        
@@ -278,10 +289,6 @@ df4$SumAssuredBand <- factor(df4$SumAssuredBand, order = TRUE,
 ```{r}
 # Text description field, probably need to drop
 df4 <- df4 %>% select(-OccupationDescription)
-```
-
-```{r}
-str(df4)
 ```
 
 # last check for nulls

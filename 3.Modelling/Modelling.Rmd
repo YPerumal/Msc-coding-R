@@ -27,7 +27,11 @@ library(missForest)
 # Windows load tables saved as Rdata to preserve types
 load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
 
+# load images
+# load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
 
+
+###################################################################################################
 #finding zero variance columns
 # zv <- apply(df_long %>% select_if(is.numeric), 2, function(x) length(unique(x)) == 1)
 # sum(zv)
@@ -39,21 +43,15 @@ load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc -
 # hc = sort(hc)
 # #the name of the columns chosen above
 # to_be_removed <- colnames(df_corr)[hc]
+```
 
 
+```{r}
 # Remove highly correlated columns
 #Not sure if all should be removed or just some.
 df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
 
-```
-
-```{r}
-# load images
-# load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
-
-# Remove highly correlated columns
-#Not sure if all should be removed or just some.
-# df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue,-NumberOfVerifications)
+df_wide <- df_wide %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue) # might need to do the same exercise as above when I get to the imputation
 
 ```
 
@@ -81,13 +79,14 @@ std.dev <- sqrt(var(df_long$GammaGTValue))
 ```
 
 
+# Long Dataset
 ## Decision Tree
 
 Used Rpart and Caret
 ```{r}
 # Random forest
 # Set train control for cross-val
-dt_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = T)
+dt_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = F)
 
 #rpart
 dt_grid <- expand.grid(cp = c(0.0001,0.001,0.01,0.05,0.1)) #Default for regression is 5. Controls tree size.
@@ -113,8 +112,14 @@ dt_gridsearch <- train(GammaGTValue ~ .,
 
 #Predictions
 dt_grid_pred <- predict(dt_gridsearch, newdata = test_df)
-dt_rmse <-  sqrt(mean((test_df$GammaGTValue- dt_grid_pred)^2))
+dt_rmse_long <-  sqrt(mean((test_df$GammaGTValue- dt_grid_pred)^2))
 ```
+
+```{r}
+
+```
+
+
 
 Using the Trees Library
 ```{r}

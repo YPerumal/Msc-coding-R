@@ -1,0 +1,259 @@
+---
+title: "PreProcessing"
+author: "Yevashan Perumal"
+date: '2022-06-11'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Package Imports
+```{r}
+# library imports
+library(tidyverse)
+library(gridExtra)
+library(Amelia)
+```
+
+## Data Import
+```{r}
+# Mac
+# df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+
+# Windows
+df <- read.csv('C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+```
+
+
+## Columns dropped from EDA
+
+Setup Variables/Lists used below
+```{r}
+# dropped columns from EDA
+cols_to_drop <- c(# Just didnt seem handy:
+                  'RecordID',
+                  'ProductCode',
+                  'DimGCSPartyKeyLifeCovered',
+                  'DimDateKeyInitiated','DimDateKeyFinalised','DimDateKeyAccepted'
+                  ,'UnderwritingInitiationDate','UnderwritingFinaliseDate',
+                  'UnderwritingCode',
+                  'UnderwritingTerritory',
+                  'UnderwritingDuration',
+                  'QuoteNumber' ,
+                  # because of high correlation/target leakage/they're informed by GammaGT:
+                  'LoadingPercentage','CoverLoadingAmount','HealthLoadingPercentage',
+                  # double check these are all for current app?could be previous:
+                  'CoverLoading','HealthLoadingIndicator','CoverLoadingIndicator',
+                  'UnderwritingOutcome','NoOfLoadingsApplied',
+                  #customer identifier:
+                   'LifeCoveredClientID',
+                  # no varation, found in modelling stage
+                  'NumberOfVerifications'
+                  )
+```
+The columns above just looked useless from eyeballing and seeing what they are. Dropping duplicates because there were multiple things again.
+
+## Converting char to numeric for appropriate columns
+```{r}
+char_to_numeric_list <- c( 
+'CurrentCoverAmount','CholesterolValue','GammaGTValue','CotinineValue',
+'BloodSugarValue','ClientBMIValue','DoctorBMIValue','SystolicBloodPressureValue',
+'DiastolicBloodPressureValue','RestingPulseValue','HeightValue','WeightValue',
+'NumberOfCigarettes','NumberOfFailedLevel1Evaluations','NumberOfFailedDetailEvaluations','NumberOfExclusions',  'NumberOfDeferrals','MonthlyIncome','MonthlyIncome_Override',
+'UnderwritingCreditAmount','InputMedium','CoverAmount',
+'PremiumRateCatDiscount','ReinsuranceRateCatDiscount','IntermediaryQualityDiscount',  
+'MonthlyIncome_Override2','AGE','ALL_BEN_COUNT','ALL_CONTRACT_COUNT','ANNUAL_INVESTMENT','AUM'
+)            
+```
+
+## Drop some columns after EDA
+```{r}
+post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions',
+                        'UnderwritingCreditAmount','InputMedium','ManualDiscountIndicator',
+                        'MonthlyIncome_Override2','MonthlyIncome',
+                        'PremiumRateCatDiscount',#not a lot of variation here, about 1k rows
+                        'ReinsuranceRateCatDiscount', #not a lot of variation here, about 1k rows
+                        'IntermediaryQualityDiscount', #not a lot of variation here, about 1k rows
+                        'AutoDeclinedIndicator', #cat column, not much variation
+                        'AutoUnderwrittenIndicator', #cat column, not much variation
+                        'UnderwritingPostalCode', # lots of nulls
+                        'IncomeCoverBand', # everything just 100k>
+                        'IntermediaryQualityCategory' ,# empty
+                        'PUBLIC_SECTOR_SOURCE', # just didnt think it would be handy
+                        'ManualDiscountIndicator', #empty
+                        'OccupationDescription' #text description
+                        )
+```
+
+## Columns to convert to factor
+```{r}
+t1 <-  c("ProductSoldType","SmokerStatus","AutoDeferredIndicator","NTUIndicator","LOAIndicator","ExclusionIndicator",    "AcceleratorIndicator","ASS_ETHNIC_GROUP","PROVINCE","FARMER_IND","PROF_MARKET_IND","PUBLIC_SECTOR_IND",
+"PUBLIC_SECTOR_TYPE","MARITAL_STATUS","GENDER")   
+```
+
+
+
+## Remove Outliers Function
+```{r}
+# create detect outlier function
+detect_outlier <- function(x) {
+ 
+    # calculate first quantile
+    Quantile1 <- quantile(x, probs=.25)
+ 
+    # calculate third quantile
+    Quantile3 <- quantile(x, probs=.75)
+ 
+    # calculate inter quartile range
+    IQR = Quantile3-Quantile1
+ 
+    # return true or false
+    x > Quantile3 + (IQR*1.5) | x < Quantile1 - (IQR*1.5)
+}
+ 
+# create remove outlier function
+remove_outlier <- function(dataframe,
+                            columns=names(dataframe)) {
+ 
+    # for loop to traverse in columns vector
+    for (col in columns) {
+ 
+        # remove observation if it satisfies outlier function
+        dataframe <- dataframe[!detect_outlier(dataframe[[col]]), ]
+    }
+ 
+    # return dataframe
+    print("Remove outliers")
+    print(dataframe)
+}
+ 
+
+```
+
+
+```{r}
+data_cleaning_long <- function(data){
+    # dropped columns from EDA
+    data <- data %>% select(-all_of(cols_to_drop)) %>% distinct()
+    
+    ## Converting char to numeric for appropriate columns
+    data <- data %>% mutate_at(char_to_numeric_list, as.numeric)
+    
+    ## Drop some columns after EDA
+    data <- data %>% select(-all_of(post_eda_drop_cols))
+    
+    ## Deal with nulls generated in the numeric conversion
+    data <- data %>% filter(is.na(GammaGTValue)==F)
+    data <- data %>% filter(is.na(CurrentCoverAmount)==F)
+    data <- data %>% filter(is.na(RestingPulseValue)==F)
+    data <- data %>% filter(is.na(NumberOfFailedLevel1Evaluations)==F)
+    data <- data %>% filter(is.na(NumberOfDeferrals)==F)
+    data <- data %>% filter(is.na(MonthlyIncome_Override)==F)
+    
+    ## Fill Nulls with appropriate values for numeric and character columns
+    data$NumberOfFailedDetailEvaluations[is.na(data$NumberOfFailedDetailEvaluations)]= 0
+    data <- data %>% mutate(EducationID_Override = replace(EducationID_Override, EducationID_Override == 'NULL', '1'))
+    data <- data %>% mutate(ASS_ETHNIC_GROUP = replace(ASS_ETHNIC_GROUP, ASS_ETHNIC_GROUP == '', 'UNKNOWN'))
+    data <- data %>% mutate(PROVINCE = replace(PROVINCE, PROVINCE == '', 'UNKNOWN'))
+    data <- data %>% mutate(FARMER_IND = replace(FARMER_IND, FARMER_IND == '', 'UNKNOWN'))
+    data <- data %>% mutate(PROF_MARKET_IND = replace(PROF_MARKET_IND, PROF_MARKET_IND == '', 'UNKNOWN'))
+    data <- data %>% mutate(PUBLIC_SECTOR_IND = replace(PUBLIC_SECTOR_IND, PUBLIC_SECTOR_IND == '', 'UNKNOWN'))
+    data <- data %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == '', 'UNKNOWN'))
+    data <- data %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == 'N/A', 'UNKNOWN'))
+    data <- data %>% mutate(MARITAL_STATUS = replace(MARITAL_STATUS, MARITAL_STATUS == '', 'UNKNOWN'))
+    data <- data %>% mutate(GENDER = replace(GENDER, GENDER == '', 'UNKNOWN'))
+    
+    # Find all numeric columns 
+    num_cols <- data %>% select_if(is.numeric)
+    # Find all char columns
+    char_cols <- data %>% select_if(is.character)
+    
+    # Outliers
+    data <- remove_outlier(data, columns = names(num_cols %>%
+                                            select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)))
+    
+    #remove duplicate rows
+    data <- data %>% distinct()
+    
+    # coerce char columns to factor, no order
+    data[t1] <- lapply(data[t1], factor) 
+    
+    # "OccupationClassCode"  
+    data$OccupationClassCode <- factor(data$OccupationClassCode, order = TRUE, 
+                                        levels = c("-","A", "B", "C","D","E"))
+    
+    # "DisabilityIncomeClass"  
+    data$DisabilityIncomeClass <- factor(data$DisabilityIncomeClass, order = TRUE, 
+                                        levels = c("Unknown","1", "1*", "2","3"))
+    
+    # "EducationID_Override"  
+    data$EducationID_Override <- factor(data$EducationID_Override, order = TRUE, 
+                                        levels = c("-1", "1", "2","3","4"))
+    
+     # "SumAssuredBand"
+    data$SumAssuredBand <- factor(data$SumAssuredBand, order = TRUE, 
+                                        levels = c( "A: R0.00 - R100,000.00"   , 
+                                                    "B: R100,000.00 - R200,000.00"  , 
+                                                    "C: R200,000.00 - R300,000.00"    ,
+                                                     "D: R300,000.00 - R400,000.00"  ,
+                                                     "E: R400,000.00 - R500,000.00"   ,
+                                                     "F: R500,000.00 - R600,000.00" ,
+                                                     "G: R600,000.00 - R700,000.00" ,
+                                                    "H: R700,000.00 - R800,000.00"  ,
+                                                     "I: R800,000.00 - R900,000.00"  ,
+                                                       "J: R900,000.00 - R1,000,000.00"  ,
+                                                      "K: R1,000,000.00 - R1,500,000.00",
+                                                     "L: R1,500,000.00 - R2,000,000.00",
+                                                     "M: R2,000,000.00 - R2,500,000.00"
+                                                    ))
+
+    
+    return(data) 
+
+}
+```
+
+```{r}
+t <- data_cleaning_long(df)
+```
+
+Deal with highly correlated variables(should've done a corrplot in the EDA)
+```{r}
+# library(caret)
+# df_corr = cor(data %>% select_if(is.numeric) %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM))
+# # df_corr = cor(data)
+# 
+# hc = findCorrelation(df_corr, cutoff=0.6) # putt any value as a "cutoff"
+# hc = sort(hc)
+# reduced_Data = df1[,-c(hc)]
+# print (reduced_Data)
+```
+
+
+At this points only the CDW numeric columns have null values remaining.
+Going to be making two datasets now:
+
+```{r}
+# dataset with CDW columns, but now nulls
+df_wide <- data %>% na.omit()
+dim(df_wide)
+
+write.csv(df_wide,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/wide_data.csv", row.names=FALSE)
+
+```
+
+```{r}
+# dataset dropping CDW columns, but with more rows. 
+df_long <- data %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)
+
+dim(df_long)
+
+write.csv(df_long,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/long_data.csv", row.names=FALSE)
+```
+
+```{r}
+save(df_wide,df_long,file = "/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
+```
+
