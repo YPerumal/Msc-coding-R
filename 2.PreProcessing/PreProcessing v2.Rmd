@@ -26,15 +26,13 @@ library(Amelia)
 df <- read.csv('C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
 ```
 
-
-## Columns dropped from EDA
-
-Setup Variables/Lists used below
+Lists Set up:
+## Columns to drop:
 ```{r}
 # dropped columns from EDA
 cols_to_drop <- c(# Just didnt seem handy:
-                  'RecordID',
                   'ProductCode',
+                  'RecordID',
                   'DimGCSPartyKeyLifeCovered',
                   'DimDateKeyInitiated','DimDateKeyFinalised','DimDateKeyAccepted'
                   ,'UnderwritingInitiationDate','UnderwritingFinaliseDate',
@@ -53,26 +51,20 @@ cols_to_drop <- c(# Just didnt seem handy:
                   'NumberOfVerifications'
                   )
 ```
-The columns above just looked useless from eyeballing and seeing what they are. Dropping duplicates because there were multiple things again.
+The columns above just looked useless from eyeballing and seeing what they are
 
-## Converting char to numeric for appropriate columns
-```{r}
-char_to_numeric_list <- c( 
-'CurrentCoverAmount','CholesterolValue','GammaGTValue','CotinineValue',
-'BloodSugarValue','ClientBMIValue','DoctorBMIValue','SystolicBloodPressureValue',
-'DiastolicBloodPressureValue','RestingPulseValue','HeightValue','WeightValue',
-'NumberOfCigarettes','NumberOfFailedLevel1Evaluations','NumberOfFailedDetailEvaluations','NumberOfExclusions',  'NumberOfDeferrals','MonthlyIncome','MonthlyIncome_Override',
-'UnderwritingCreditAmount','InputMedium','CoverAmount',
-'PremiumRateCatDiscount','ReinsuranceRateCatDiscount','IntermediaryQualityDiscount',  
-'MonthlyIncome_Override2','AGE','ALL_BEN_COUNT','ALL_CONTRACT_COUNT','ANNUAL_INVESTMENT','AUM'
-)            
-```
 
-## Drop some columns after EDA
 ```{r}
-post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions',
-                        'UnderwritingCreditAmount','InputMedium','ManualDiscountIndicator',
-                        'MonthlyIncome_Override2','MonthlyIncome',
+# Drop some columns after EDA
+post_eda_drop_cols <- c(
+                        'CotinineValue',
+                        'NumberOfCigarettes',
+                        'NumberOfExclusions',
+                        'UnderwritingCreditAmount',
+                        'InputMedium',
+                        'ManualDiscountIndicator',
+                        'MonthlyIncome_Override2',
+                        'MonthlyIncome',
                         'PremiumRateCatDiscount',#not a lot of variation here, about 1k rows
                         'ReinsuranceRateCatDiscount', #not a lot of variation here, about 1k rows
                         'IntermediaryQualityDiscount', #not a lot of variation here, about 1k rows
@@ -87,12 +79,65 @@ post_eda_drop_cols <- c('CotinineValue','NumberOfCigarettes','NumberOfExclusions
                         )
 ```
 
-## Columns to convert to factor
+## Things to Convert
+
 ```{r}
-t1 <-  c("ProductSoldType","SmokerStatus","AutoDeferredIndicator","NTUIndicator","LOAIndicator","ExclusionIndicator",    "AcceleratorIndicator","ASS_ETHNIC_GROUP","PROVINCE","FARMER_IND","PROF_MARKET_IND","PUBLIC_SECTOR_IND",
-"PUBLIC_SECTOR_TYPE","MARITAL_STATUS","GENDER")   
+## Converting char to numeric for appropriate columns
+char_to_numeric_list <- c( 
+                        'CurrentCoverAmount',
+                        'CholesterolValue',
+                        'GammaGTValue',
+                        'CotinineValue',
+                        'BloodSugarValue',
+                        'ClientBMIValue',
+                        'DoctorBMIValue',
+                        'SystolicBloodPressureValue',
+                        'DiastolicBloodPressureValue',
+                        'RestingPulseValue',
+                        'HeightValue',
+                        'WeightValue',
+                        'NumberOfCigarettes',
+                        'NumberOfFailedLevel1Evaluations',
+                        'NumberOfFailedDetailEvaluations',
+                        'NumberOfExclusions', 
+                        'NumberOfDeferrals',
+                        'MonthlyIncome',
+                        'MonthlyIncome_Override',
+                        'UnderwritingCreditAmount',
+                        'InputMedium',
+                        'CoverAmount',
+                        'PremiumRateCatDiscount',
+                        'ReinsuranceRateCatDiscount',
+                        'IntermediaryQualityDiscount',  
+                        'MonthlyIncome_Override2',
+                        'AGE',
+                        'ALL_BEN_COUNT',
+                        'ALL_CONTRACT_COUNT',
+                        'ANNUAL_INVESTMENT',
+                        'AUM'
+)            
 ```
 
+```{r}
+## Columns to convert to factor
+t1 <-  c(
+        "ProductSoldType",
+        "SmokerStatus",
+        "AutoDeferredIndicator",
+        "NTUIndicator",
+        "LOAIndicator",
+        "ExclusionIndicator",      
+        "AcceleratorIndicator",
+        "ASS_ETHNIC_GROUP",
+        "PROVINCE",
+        "FARMER_IND",
+        "PROF_MARKET_IND",
+        "PUBLIC_SECTOR_IND",
+        "PUBLIC_SECTOR_TYPE",
+        "MARITAL_STATUS",
+        "GENDER"
+         )   
+```
 
 
 ## Remove Outliers Function
@@ -132,19 +177,32 @@ remove_outlier <- function(dataframe,
 
 ```
 
-
 ```{r}
-data_cleaning_long <- function(data){
+data_cleaning_drop_cols <- function(data){
+
+    # Drop unused columns per EDA;
+    # convert char columns to numeric
+
     # dropped columns from EDA
     data <- data %>% select(-all_of(cols_to_drop)) %>% distinct()
     
     ## Converting char to numeric for appropriate columns
     data <- data %>% mutate_at(char_to_numeric_list, as.numeric)
-    
+
     ## Drop some columns after EDA
     data <- data %>% select(-all_of(post_eda_drop_cols))
     
-    ## Deal with nulls generated in the numeric conversion
+    return(data)
+}
+```
+
+```{r}
+data_cleaning_nulls <- function(data){
+
+    # Deals with all null values
+    # A lot of these are generated via conversion
+    
+## Deal with nulls generated in the numeric conversion; drop rows 
     data <- data %>% filter(is.na(GammaGTValue)==F)
     data <- data %>% filter(is.na(CurrentCoverAmount)==F)
     data <- data %>% filter(is.na(RestingPulseValue)==F)
@@ -165,18 +223,38 @@ data_cleaning_long <- function(data){
     data <- data %>% mutate(MARITAL_STATUS = replace(MARITAL_STATUS, MARITAL_STATUS == '', 'UNKNOWN'))
     data <- data %>% mutate(GENDER = replace(GENDER, GENDER == '', 'UNKNOWN'))
     
-    # Find all numeric columns 
+    return(data)
+    }
+
+```
+
+```{r}
+data_cleaning_num_outliers <- function(data){
+    
+    # Deals with all numeric outlier values
+    
+# Find all numeric columns 
     num_cols <- data %>% select_if(is.numeric)
-    # Find all char columns
-    char_cols <- data %>% select_if(is.character)
+
     
     # Outliers
-    data <- remove_outlier(data, columns = names(num_cols %>%
-                                            select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)))
+    data <- remove_outlier(data,columns=names(num_cols%>%select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)))
     
     #remove duplicate rows
     data <- data %>% distinct()
     
+    return(data)
+}
+```
+
+
+```{r}
+data_cleaning_factor_cols <- function(data){
+    
+    # Converts all necessart char columns to factors
+
+# Find all char columns
+    char_cols <- data %>% select_if(is.character)
     # coerce char columns to factor, no order
     data[t1] <- lapply(data[t1], factor) 
     
@@ -216,8 +294,41 @@ data_cleaning_long <- function(data){
 ```
 
 ```{r}
-t <- data_cleaning_long(df)
+test <- head(df)
+# test <- test %>% select(-RecordID) %>% mutate(unique_id=)
+test['unique_id'] <- c('this','is','a','test','!','@')
+
+# https://stackoverflow.com/questions/20643166/set-a-data-frame-column-as-the-index-of-r-data-frame-object  
+
+# https://stackoverflow.com/questions/36396911/r-move-index-column-to-first-column
+
+rownames(test) <- test$unique_id
+test <- test %>% select(-unique_id)
+#back again
+tibble::rownames_to_column(test, "VALUE")
 ```
+
+
+## Apply the functions
+```{r}
+df1 <- data_cleaning_drop_cols(df)
+df2 <- data_cleaning_nulls(df1)
+df3 <- data_cleaning_num_outliers(df2)
+df4 <- data_cleaning_num_outliers(df3)
+
+```
+
+
+```{r}
+dim(df4)
+```
+
+
+```{r}
+sapply(df4, function(x) sum(is.na(x)))
+```
+
+
 
 Deal with highly correlated variables(should've done a corrplot in the EDA)
 ```{r}
