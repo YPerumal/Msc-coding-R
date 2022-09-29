@@ -306,6 +306,9 @@ rownames(test) <- test$unique_id
 test <- test %>% select(-unique_id)
 #back again
 tibble::rownames_to_column(test, "VALUE")
+
+library(ids)
+ids::uuid(4)
 ```
 
 
