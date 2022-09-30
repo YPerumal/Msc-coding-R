@@ -10,11 +10,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Package Imports
-```{r}
+```{r message=FALSE, warning=FALSE}
 # library imports
 library(tidyverse)
 library(gridExtra)
 library(Amelia)
+library(ids)
 ```
 
 ## Data Import
@@ -24,6 +25,23 @@ library(Amelia)
 
 # Windows
 df <- read.csv('C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+```
+
+
+Set Unique Identifier and make it the index of the df
+```{r}
+set.seed(42)
+df['unique_id'] <- ids::uuid(dim(df)[1])
+rownames(df) <- df$unique_id
+df <- df %>% select(-unique_id)
+
+# https://stackoverflow.com/questions/20643166/set-a-data-frame-column-as-the-index-of-r-data-frame-object  
+# https://stackoverflow.com/questions/36396911/r-move-index-column-to-first-column
+
+# unqiue ID back to column back again
+# tibble::rownames_to_column(df, "unique_id")
+
+head(df)
 ```
 
 Lists Set up:
@@ -120,7 +138,7 @@ char_to_numeric_list <- c(
 
 ```{r}
 ## Columns to convert to factor
-t1 <-  c(
+factor_cols <-  c(
         "ProductSoldType",
         "SmokerStatus",
         "AutoDeferredIndicator",
@@ -173,10 +191,44 @@ remove_outlier <- function(dataframe,
     print("Remove outliers")
     print(dataframe)
 }
- 
-
 ```
 
+```{r}
+# create detect outlier function
+detect_outlier_ignore_nulls <- function(x) {
+ 
+    # calculate first quantile
+    Quantile1 <- quantile(x, probs=.25,na.rm=TRUE)
+ 
+    # calculate third quantile
+    Quantile3 <- quantile(x, probs=.75,na.rm=TRUE)
+ 
+    # calculate inter quartile range
+    IQR = Quantile3-Quantile1
+ 
+    # return true or false
+    x > Quantile3 + (IQR*1.5) | x < Quantile1 - (IQR*1.5)
+}
+ 
+# create remove outlier function
+remove_outlier_ignore_nulls <- function(dataframe,
+                            columns=names(dataframe)) {
+ 
+    # for loop to traverse in columns vector
+    for (col in columns) {
+ 
+        # remove observation if it satisfies outlier function
+        dataframe <- dataframe[!detect_outlier_ignore_nulls(dataframe[[col]]), ]
+    }
+ 
+    # return dataframe
+    print("Remove outliers")
+    print(dataframe)
+}
+```
+
+
+## Drop columns and Conversions
 ```{r}
 data_cleaning_drop_cols <- function(data){
 
@@ -196,6 +248,7 @@ data_cleaning_drop_cols <- function(data){
 }
 ```
 
+## Drop and Deal with Nulls
 ```{r}
 data_cleaning_nulls <- function(data){
 
@@ -228,6 +281,7 @@ data_cleaning_nulls <- function(data){
 
 ```
 
+## Remove Outliers from Numeric data
 ```{r}
 data_cleaning_num_outliers <- function(data){
     
@@ -249,14 +303,33 @@ data_cleaning_num_outliers <- function(data){
 
 
 ```{r}
+data_cleaning_num_outliers_ignore_nulls <- function(data){
+    
+    # Deals with all numeric outlier values
+    
+# Find all numeric columns 
+    num_cols <- data %>% select_if(is.numeric)
+
+    
+    # Outliers
+    data <- remove_outlier_ignore_nulls(data,columns=names(num_cols%>%select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)))
+    
+    #remove duplicate rows
+    data <- data %>% distinct()
+    
+    return(data)
+}
+```
+## Convert char to factor
+```{r}
 data_cleaning_factor_cols <- function(data){
     
     # Converts all necessart char columns to factors
 
-# Find all char columns
+    # Find all char columns
     char_cols <- data %>% select_if(is.character)
     # coerce char columns to factor, no order
-    data[t1] <- lapply(data[t1], factor) 
+    data[factor_cols] <- lapply(data[factor_cols], factor) 
     
     # "OccupationClassCode"  
     data$OccupationClassCode <- factor(data$OccupationClassCode, order = TRUE, 
@@ -293,44 +366,70 @@ data_cleaning_factor_cols <- function(data){
 }
 ```
 
-```{r}
-test <- head(df)
-# test <- test %>% select(-RecordID) %>% mutate(unique_id=)
-test['unique_id'] <- c('this','is','a','test','!','@')
-
-# https://stackoverflow.com/questions/20643166/set-a-data-frame-column-as-the-index-of-r-data-frame-object  
-
-# https://stackoverflow.com/questions/36396911/r-move-index-column-to-first-column
-
-rownames(test) <- test$unique_id
-test <- test %>% select(-unique_id)
-#back again
-tibble::rownames_to_column(test, "VALUE")
-
-library(ids)
-ids::uuid(4)
-```
 
 
-## Apply the functions
+
+## Wide and long datasets
 ```{r}
 df1 <- data_cleaning_drop_cols(df)
 df2 <- data_cleaning_nulls(df1)
 df3 <- data_cleaning_num_outliers(df2)
-df4 <- data_cleaning_num_outliers(df3)
-
+df4 <- data_cleaning_factor_cols(df3)
 ```
+
+```{r}
+# dataset with CDW columns, but now nulls
+df_wide <- df4 %>% na.omit()
+dim(df_wide)
+
+# write.csv(df_wide,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/wide_data.csv", row.names=FALSE)
+
+# unqiue ID back to column back again
+df_wide <- tibble::rownames_to_column(df_wide, "unique_id")
+
+df_wide
+```
+
+```{r}
+# dataset dropping CDW columns, but with more rows. 
+df_long <- df4 %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)
+
+dim(df_long)
+
+# write.csv(df_long,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/long_data.csv", row.names=FALSE)
+
+# unqiue ID back to column back again
+df_long <- tibble::rownames_to_column(df_long, "unique_id")
+
+df_long
+```
+
+
+
+## Impuation dataset creation 
+
+First, dont do anything with the nulls
+```{r}
+t1 <- data_cleaning_drop_cols(df)
+# t2 <- data_cleaning_nulls(t1)
+t3 <- data_cleaning_num_outliers_ignore_nulls(t1) #changed here
+t4 <- data_cleaning_factor_cols(t3)
+
+t4
+```
+
+Something wrong here. Ending up with less rows than I do for the wide and long datasets
+
 
 
 ```{r}
-dim(df4)
+# sapply(df4, function(x) sum(is.na(x)))
 ```
-
 
 ```{r}
-sapply(df4, function(x) sum(is.na(x)))
+# unqiue ID back to column back again
+tibble::rownames_to_column(df, "unique_id")
 ```
-
 
 
 Deal with highly correlated variables(should've done a corrplot in the EDA)
@@ -350,23 +449,15 @@ At this points only the CDW numeric columns have null values remaining.
 Going to be making two datasets now:
 
 ```{r}
-# dataset with CDW columns, but now nulls
-df_wide <- data %>% na.omit()
-dim(df_wide)
 
-write.csv(df_wide,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/wide_data.csv", row.names=FALSE)
 
 ```
 
 ```{r}
-# dataset dropping CDW columns, but with more rows. 
-df_long <- data %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)
 
-dim(df_long)
-
-write.csv(df_long,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/long_data.csv", row.names=FALSE)
 ```
 
+Save all datasets in and R object to preserve data types
 ```{r}
 save(df_wide,df_long,file = "/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
 ```
