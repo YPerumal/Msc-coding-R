@@ -68,11 +68,7 @@ cols_to_drop <- c(# Just didnt seem handy:
                   # no varation, found in modelling stage
                   'NumberOfVerifications'
                   )
-```
-The columns above just looked useless from eyeballing and seeing what they are
 
-
-```{r}
 # Drop some columns after EDA
 post_eda_drop_cols <- c(
                         'CotinineValue',
@@ -95,11 +91,7 @@ post_eda_drop_cols <- c(
                         'ManualDiscountIndicator', #empty
                         'OccupationDescription' #text description
                         )
-```
 
-## Things to Convert
-
-```{r}
 ## Converting char to numeric for appropriate columns
 char_to_numeric_list <- c( 
                         'CurrentCoverAmount',
@@ -133,10 +125,8 @@ char_to_numeric_list <- c(
                         'ALL_CONTRACT_COUNT',
                         'ANNUAL_INVESTMENT',
                         'AUM'
-)            
-```
+)
 
-```{r}
 ## Columns to convert to factor
 factor_cols <-  c(
         "ProductSoldType",
@@ -155,6 +145,63 @@ factor_cols <-  c(
         "MARITAL_STATUS",
         "GENDER"
          )   
+
+```
+The columns above just looked useless from eyeballing and seeing what they are
+
+
+
+## Drop columns and Conversions
+```{r}
+data_cleaning_drop_cols <- function(data){
+
+    # Drop unused columns per EDA;
+    # convert char columns to numeric
+
+    # dropped columns from EDA
+    data <- data %>% select(-all_of(cols_to_drop)) %>% distinct()
+    
+    # Converting char to numeric for appropriate columns
+    data <- data %>% mutate_at(char_to_numeric_list, as.numeric)
+
+    # Drop some columns after EDA
+    data <- data %>% select(-all_of(post_eda_drop_cols))
+    
+    return(data)
+}
+```
+
+## Drop and Deal with Nulls
+```{r}
+data_cleaning_nulls <- function(data){
+
+    # Deals with all null values
+    # A lot of these are generated via conversion
+    
+    # Deal with nulls generated in the numeric conversion; drop rows 
+    data <- data %>% filter(is.na(GammaGTValue)==F)
+    data <- data %>% filter(is.na(CurrentCoverAmount)==F)
+    data <- data %>% filter(is.na(RestingPulseValue)==F)
+    data <- data %>% filter(is.na(NumberOfFailedLevel1Evaluations)==F)
+    data <- data %>% filter(is.na(NumberOfDeferrals)==F)
+    data <- data %>% filter(is.na(MonthlyIncome_Override)==F)
+    
+    # Fill Nulls with appropriate values for numeric and character columns
+    data$NumberOfFailedDetailEvaluations[is.na(data$NumberOfFailedDetailEvaluations)]= 0
+    data <- data %>% mutate(EducationID_Override = replace(EducationID_Override, EducationID_Override == 'NULL', '1'))
+    data <- data %>% mutate(ASS_ETHNIC_GROUP = replace(ASS_ETHNIC_GROUP, ASS_ETHNIC_GROUP == '', 'UNKNOWN'))
+    data <- data %>% mutate(PROVINCE = replace(PROVINCE, PROVINCE == '', 'UNKNOWN'))
+    data <- data %>% mutate(FARMER_IND = replace(FARMER_IND, FARMER_IND == '', 'UNKNOWN'))
+    data <- data %>% mutate(PROF_MARKET_IND = replace(PROF_MARKET_IND, PROF_MARKET_IND == '', 'UNKNOWN'))
+    data <- data %>% mutate(PUBLIC_SECTOR_IND = replace(PUBLIC_SECTOR_IND, PUBLIC_SECTOR_IND == '', 'UNKNOWN'))
+    data <- data %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == '', 'UNKNOWN'))
+    data <- data %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == 'N/A', 'UNKNOWN'))
+    data <- data %>% mutate(MARITAL_STATUS = replace(MARITAL_STATUS, MARITAL_STATUS == '', 'UNKNOWN'))
+    data <- data %>% mutate(GENDER = replace(GENDER, GENDER == '', 'UNKNOWN'))
+    
+    return(data)
+    }
+
 ```
 
 
@@ -176,6 +223,10 @@ detect_outlier <- function(x) {
     x > Quantile3 + (IQR*1.5) | x < Quantile1 - (IQR*1.5)
 }
  
+```
+
+
+```{r}
 # create remove outlier function
 remove_outlier <- function(dataframe,
                             columns=names(dataframe)) {
@@ -193,133 +244,30 @@ remove_outlier <- function(dataframe,
 }
 ```
 
-```{r}
-# create detect outlier function
-detect_outlier_ignore_nulls <- function(x) {
- 
-    # calculate first quantile
-    Quantile1 <- quantile(x, probs=.25,na.rm=TRUE)
- 
-    # calculate third quantile
-    Quantile3 <- quantile(x, probs=.75,na.rm=TRUE)
- 
-    # calculate inter quartile range
-    IQR = Quantile3-Quantile1
- 
-    # return true or false
-    x > Quantile3 + (IQR*1.5) | x < Quantile1 - (IQR*1.5)
-}
- 
-# create remove outlier function
-remove_outlier_ignore_nulls <- function(dataframe,
-                            columns=names(dataframe)) {
- 
-    # for loop to traverse in columns vector
-    for (col in columns) {
- 
-        # remove observation if it satisfies outlier function
-        dataframe <- dataframe[!detect_outlier_ignore_nulls(dataframe[[col]]), ]
-    }
- 
-    # return dataframe
-    print("Remove outliers")
-    print(dataframe)
-}
-```
-
-
-## Drop columns and Conversions
-```{r}
-data_cleaning_drop_cols <- function(data){
-
-    # Drop unused columns per EDA;
-    # convert char columns to numeric
-
-    # dropped columns from EDA
-    data <- data %>% select(-all_of(cols_to_drop)) %>% distinct()
-    
-    ## Converting char to numeric for appropriate columns
-    data <- data %>% mutate_at(char_to_numeric_list, as.numeric)
-
-    ## Drop some columns after EDA
-    data <- data %>% select(-all_of(post_eda_drop_cols))
-    
-    return(data)
-}
-```
-
-## Drop and Deal with Nulls
-```{r}
-data_cleaning_nulls <- function(data){
-
-    # Deals with all null values
-    # A lot of these are generated via conversion
-    
-## Deal with nulls generated in the numeric conversion; drop rows 
-    data <- data %>% filter(is.na(GammaGTValue)==F)
-    data <- data %>% filter(is.na(CurrentCoverAmount)==F)
-    data <- data %>% filter(is.na(RestingPulseValue)==F)
-    data <- data %>% filter(is.na(NumberOfFailedLevel1Evaluations)==F)
-    data <- data %>% filter(is.na(NumberOfDeferrals)==F)
-    data <- data %>% filter(is.na(MonthlyIncome_Override)==F)
-    
-    ## Fill Nulls with appropriate values for numeric and character columns
-    data$NumberOfFailedDetailEvaluations[is.na(data$NumberOfFailedDetailEvaluations)]= 0
-    data <- data %>% mutate(EducationID_Override = replace(EducationID_Override, EducationID_Override == 'NULL', '1'))
-    data <- data %>% mutate(ASS_ETHNIC_GROUP = replace(ASS_ETHNIC_GROUP, ASS_ETHNIC_GROUP == '', 'UNKNOWN'))
-    data <- data %>% mutate(PROVINCE = replace(PROVINCE, PROVINCE == '', 'UNKNOWN'))
-    data <- data %>% mutate(FARMER_IND = replace(FARMER_IND, FARMER_IND == '', 'UNKNOWN'))
-    data <- data %>% mutate(PROF_MARKET_IND = replace(PROF_MARKET_IND, PROF_MARKET_IND == '', 'UNKNOWN'))
-    data <- data %>% mutate(PUBLIC_SECTOR_IND = replace(PUBLIC_SECTOR_IND, PUBLIC_SECTOR_IND == '', 'UNKNOWN'))
-    data <- data %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == '', 'UNKNOWN'))
-    data <- data %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == 'N/A', 'UNKNOWN'))
-    data <- data %>% mutate(MARITAL_STATUS = replace(MARITAL_STATUS, MARITAL_STATUS == '', 'UNKNOWN'))
-    data <- data %>% mutate(GENDER = replace(GENDER, GENDER == '', 'UNKNOWN'))
-    
-    return(data)
-    }
-
-```
-
 ## Remove Outliers from Numeric data
 ```{r}
 data_cleaning_num_outliers <- function(data){
-    
+
     # Deals with all numeric outlier values
-    
-# Find all numeric columns 
+
+    # Find all numeric columns
     num_cols <- data %>% select_if(is.numeric)
 
-    
+
     # Outliers
-    data <- remove_outlier(data,columns=names(num_cols%>%select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)))
-    
+    data <- remove_outlier(data,columns=names(num_cols%>%select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,
+                                                                -ANNUAL_INVESTMENT,-AUM)))
+
     #remove duplicate rows
     data <- data %>% distinct()
-    
+
     return(data)
 }
 ```
 
 
-```{r}
-data_cleaning_num_outliers_ignore_nulls <- function(data){
-    
-    # Deals with all numeric outlier values
-    
-# Find all numeric columns 
-    num_cols <- data %>% select_if(is.numeric)
 
-    
-    # Outliers
-    data <- remove_outlier_ignore_nulls(data,columns=names(num_cols%>%select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)))
-    
-    #remove duplicate rows
-    data <- data %>% distinct()
-    
-    return(data)
-}
-```
+
 ## Convert char to factor
 ```{r}
 data_cleaning_factor_cols <- function(data){
@@ -366,14 +314,11 @@ data_cleaning_factor_cols <- function(data){
 }
 ```
 
-
-
-
-## Wide and long datasets
+## Create Wide and long datasets
 ```{r}
 df1 <- data_cleaning_drop_cols(df)
 df2 <- data_cleaning_nulls(df1)
-df3 <- data_cleaning_num_outliers(df2)
+df3 <- data_cleaning_num_outliers(df2) #quite a big drop off here
 df4 <- data_cleaning_factor_cols(df3)
 ```
 
@@ -387,7 +332,7 @@ dim(df_wide)
 # unqiue ID back to column back again
 df_wide <- tibble::rownames_to_column(df_wide, "unique_id")
 
-df_wide
+# df_wide
 ```
 
 ```{r}
@@ -401,34 +346,76 @@ dim(df_long)
 # unqiue ID back to column back again
 df_long <- tibble::rownames_to_column(df_long, "unique_id")
 
-df_long
+# df_long
+```
+
+## Impuation dataset creation 
+
+Null version of code
+```{r}
+data_cleaning_nulls_imput <- function(data){
+
+    # Deals with all null values
+    # A lot of these are generated via conversion
+    
+    # Deal with nulls generated in the numeric conversion; drop rows 
+    data <- data %>% filter(is.na(GammaGTValue)==F)
+    # data <- data %>% filter(is.na(CurrentCoverAmount)==F)
+    # data <- data %>% filter(is.na(RestingPulseValue)==F)
+    # data <- data %>% filter(is.na(NumberOfFailedLevel1Evaluations)==F)
+    # data <- data %>% filter(is.na(NumberOfDeferrals)==F)
+    # data <- data %>% filter(is.na(MonthlyIncome_Override)==F)
+
+    # Fill Nulls with appropriate values for numeric and character columns
+    # Differs from above instead of replacing 'NULL' with 'UNKNOWN' replace with NA
+    data$NumberOfFailedDetailEvaluations[is.na(data$NumberOfFailedDetailEvaluations)]= 0
+    data <- data %>% mutate(EducationID_Override = replace(EducationID_Override, EducationID_Override == 'NULL', NA))
+    data <- data %>% mutate(ASS_ETHNIC_GROUP = replace(ASS_ETHNIC_GROUP, ASS_ETHNIC_GROUP == '', NA))
+    data <- data %>% mutate(PROVINCE = replace(PROVINCE, PROVINCE == '', NA))
+    data <- data %>% mutate(FARMER_IND = replace(FARMER_IND, FARMER_IND == '', NA))
+    data <- data %>% mutate(PROF_MARKET_IND = replace(PROF_MARKET_IND, PROF_MARKET_IND == '', NA))
+    data <- data %>% mutate(PUBLIC_SECTOR_IND = replace(PUBLIC_SECTOR_IND, PUBLIC_SECTOR_IND == '', NA))
+    data <- data %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == '', NA))
+    data <- data %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == 'N/A', NA))
+    data <- data %>% mutate(MARITAL_STATUS = replace(MARITAL_STATUS, MARITAL_STATUS == '', NA))
+    data <- data %>% mutate(GENDER = replace(GENDER, GENDER == '', NA))
+
+    return(data)
+    }
 ```
 
 
+```{r}
+temp1 <- tibble::rownames_to_column(df2, "unique_id")
+temp2 <- tibble::rownames_to_column(df3, "unique_id")
+outliers_id <- temp1 %>% anti_join(temp2,by='unique_id') %>% select(unique_id)
+```
 
-## Impuation dataset creation 
 
 First, dont do anything with the nulls
 ```{r}
 t1 <- data_cleaning_drop_cols(df)
-# t2 <- data_cleaning_nulls(t1)
-t3 <- data_cleaning_num_outliers_ignore_nulls(t1) #changed here
+t2 <- data_cleaning_nulls_imput(t1)
+
+#remove same outlier rows from procedure above; skip the na.rm and needing to create functions again
+t3 <- tibble::rownames_to_column(t2, "unique_id") %>% anti_join(outliers_id,by='unique_id')
+rownames(t3) <- t3$unique_id
+t3 <- t3 %>% select(-unique_id)
+
+# t3 <- data_cleaning_num_outliers(t1) # not needed because I did the above 
+
 t4 <- data_cleaning_factor_cols(t3)
-
-t4
 ```
-
-Something wrong here. Ending up with less rows than I do for the wide and long datasets
 
 
 
 ```{r}
-# sapply(df4, function(x) sum(is.na(x)))
+sapply(t4, function(x) sum(is.na(x)))
 ```
 
 ```{r}
 # unqiue ID back to column back again
-tibble::rownames_to_column(df, "unique_id")
+to_be_imputed <- tibble::rownames_to_column(t4, "unique_id")
 ```
 
 
@@ -445,20 +432,8 @@ Deal with highly correlated variables(should've done a corrplot in the EDA)
 ```
 
 
-At this points only the CDW numeric columns have null values remaining.
-Going to be making two datasets now:
-
+## Save all datasets in and R object to preserve data types
 ```{r}
-
-
-```
-
-```{r}
-
-```
-
-Save all datasets in and R object to preserve data types
-```{r}
-save(df_wide,df_long,file = "/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
+save(df_wide,df_long,to_be_imputed,file = "C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
 ```
 

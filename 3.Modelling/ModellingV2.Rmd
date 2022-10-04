@@ -1,0 +1,294 @@
+# Supervised Learning
+
+## Import Libraries
+```{r message=FALSE, warning=FALSE}
+library(xgboost)
+library(tidyverse)
+library(caret)
+library(randomForest)
+library(ggplot2)
+library(rpart)
+library(tree)
+
+#Imputation
+library(mice)
+library(Amelia)
+library(Rcpp)
+library('fastDummies')
+library(missForest)
+```
+
+## Import Data
+
+```{r}
+# Mac
+# load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
+
+# Windows load tables saved as Rdata to preserve types
+load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
+
+# load images
+# load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+
+
+###################################################################################################
+#finding zero variance columns
+# zv <- apply(df_long %>% select_if(is.numeric), 2, function(x) length(unique(x)) == 1)
+# sum(zv)
+# zv
+
+# Find names of highly correlated columns
+# df_corr = cor(df_long %>% select_if(is.numeric))
+# hc = findCorrelation(df_corr, cutoff=0.6) # putt any value as a "cutoff"
+# hc = sort(hc)
+# #the name of the columns chosen above
+# to_be_removed <- colnames(df_corr)[hc]
+```
+
+
+```{r}
+# Remove highly correlated columns
+#Not sure if all should be removed or just some.
+df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
+
+df_wide <- df_wide %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue) # might need to do the same exercise as above when I get to the imputation
+
+```
+
+## Train-Test Split for df_long
+```{r}
+# Create the training and test datasets
+set.seed(42)
+
+# Step 1: Get row numbers for the training data
+trainRowNumbers <- createDataPartition(df_long$GammaGTValue, p=0.8, list=FALSE)
+
+# Step 2: Create the training  dataset
+train_df <- df_long[trainRowNumbers,]
+x_train <- train_df %>% select(-GammaGTValue)
+y_train <- train_df %>% select(GammaGTValue)
+
+# Step 3: Create the test dataset
+test_df <- df_long[-trainRowNumbers,]
+x_test <- test_df %>% select(-GammaGTValue)
+y_test <- test_df %>% select(GammaGTValue)
+```
+
+```{r}
+std.dev <- sqrt(var(df_long$GammaGTValue))
+```
+
+
+# Long Dataset
+## Decision Tree
+
+Used Rpart and Caret
+```{r}
+# Random forest
+# Set train control for cross-val
+dt_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = F)
+
+#rpart
+dt_grid <- expand.grid(cp = c(0.0001,0.001,0.01,0.05,0.1)) #Default for regression is 5. Controls tree size.
+
+# # rpart2
+# dt_grid <- expand.grid(maxdepth = c(5,10,20)
+#                        ) #Default for regression is 5. Controls tree size.
+
+set.seed(42)
+dt_gridsearch <- train(GammaGTValue ~ .,
+                       data = train_df,
+                       method = 'rpart',
+                       trControl = dt_ctrl
+                       ,tuneGrid = dt_grid #Here is the grid
+                       )
+
+# dt_gridsearch$bestTune
+# cp <- dt_gridsearch$bestTune[[1]]
+
+# train a final model to get variable importance plot
+# library(rpart)
+# dt_final <-  rpart(GammaGTValue ~ ., data = train_df,cp=cp)
+
+#Predictions
+dt_grid_pred <- predict(dt_gridsearch, newdata = test_df)
+dt_rmse_long <-  sqrt(mean((test_df$GammaGTValue- dt_grid_pred)^2))
+```
+
+```{r}
+
+```
+
+
+
+Using the Trees Library
+```{r}
+# set.seed(42)
+# 
+# tree_model <- tree(GammaGTValue ~ ., data=train_df)
+# summary(tree_model)
+# 
+# plot(tree_model)
+# text(tree_model, cex=0.8)
+# 
+# # cross validation
+# cv_tree <- cv.tree(tree_model)
+# plot(cv_tree$size, cv_tree$dev, type = 'b')
+# 
+# ## pruning
+# prune_tree <- prune.tree(tree_model, best = 2)
+# plot(prune_tree)
+# text(prune_tree, pretty=0, cex=0.8)
+# 
+# tree_yhat<- predict(tree_model, newdata=x_test)
+# tree_res <- data.frame(tree_yhat,y_test)
+# plot(tree_res$tree_yhat, tree_res$tree_yhat)
+# 
+# tree_rmse <- sqrt(mean((tree_yhat-y_test$GammaGTValue)^2))# MSE
+```
+
+
+## Random Forest Using Caret
+```{r}
+# Random forest
+# Set train control for cross-val
+rf_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = T)
+
+# Set grid search for hyperparaneter search
+rf_grid <- expand.grid(mtry = 10:20,
+                       splitrule = 'variance', #Have to specify. This is RSS for reg.
+                       min.node.size = c(5:10)) #Default for regression is 5. Controls tree size.
+
+# set.seed(42)
+rf_gridsearch <- train(GammaGTValue ~ ., 
+                       data = train_df,
+                       method = 'ranger',
+                       num.trees = 100,
+                       verbose = T,
+                       trControl = rf_ctrl
+                       ,tuneGrid = rf_grid #Here is the grid
+                       ) 
+
+# rf_gridsearch$bestTune
+# mtry <- rf_gridsearch$bestTune[[1]]
+# splitrule <- rf_gridsearch$bestTune[[2]]
+# min.node.size <- rf_gridsearch$bestTune[[3]]
+
+# train a final model to get variable importance plot
+# rf_final <- randomForest(GammaGTValue ~ ., data = train_df,
+#                            ntree = 10,
+#                            importance = TRUE,
+#                             mtry=mtry,
+#                             splitrule=splitrule,
+#                             min.node.size=min.node.size)
+
+#Predictions
+rf_grid_pred <- predict(rf_gridsearch, newdata = test_df)
+rf_rmse <-  sqrt(mean((test_df$GammaGTValue- rf_grid_pred)^2))
+```
+
+## XGB using Caret
+```{r}
+# XGboost model
+# train control for CV
+ctrl <-  trainControl(method = 'cv', number = 5, verboseIter = T)
+
+xgb_grid <- expand.grid(nrounds = c(50,100,200),      #B - number of trees
+                        max_depth = c(8:12),      #d - interaction depth
+                        eta = c(0.1,0.01),       #lambda - learning rate
+                        gamma = 0.001,            #mindev
+                        colsample_bytree = 0.8,     #proportion random features per tree
+                        min_child_weight = 1,     #also controls tree depth
+                        subsample = 0.8             #bootstrap proportion
+)
+
+
+xgb_final <- train(GammaGTValue ~ ., data = train_df,
+                 method = 'xgbTree',
+                 trControl = ctrl,
+                 verbose = F,
+                 tuneGrid = xgb_grid)
+
+#Predictions
+xgb_pred <- predict(xgb_final, test_df)
+xgb_rmse <- sqrt(mean((test_df$GammaGTValue - xgb_pred)^2))
+
+```
+
+#######################################################################
+
+# Imputation 
+
+## Set up data
+```{r}
+# copy train data 
+imput_train_df <- train_df
+
+#copy tet data
+imput_test_df <- test_df
+# make the test data target column nulls
+imput_test_df$GammaGTValue <- NA
+
+#combine into one
+imput_data <- imput_train_df %>% bind_rows(imput_test_df)
+```
+
+## MICE
+```{r}
+# system.time(
+# imp <- mice(imput_data,seed = 42) 
+# )
+# imp <- mice(imput_data,seed = 100)
+imp <- mice(imput_data,method='cart',seed = 42)
+# 
+
+# removing columns like I did for Amelia didnt work
+# imp <- mice(imput_data[,1:11],seed = 42) #ran into problems at the 11th column here
+
+# this works
+# test <- imput_data %>% select_if(is.numeric)
+
+# imp <- mice(test,seed = 42)
+
+
+# imp$imp$GammaGTValue
+# meth = init$method
+# predM = init$predictorMatrix
+```
+Error here. looks to be with highly correlted variables due to the factor vars I have. Need to either decide to remove, or use different methods for those ones.
+looks like it starts acting up at more than 31500 rows. Need to investigate further what's gonig on here.        
+ ˆ
+ 
+ 
+## Amelia
+assumes varaibles follow multivariate normal distributions. Some transfaormations may be needed?
+```{r}
+imput_data_dummy_var <- dummy_cols(imput_data, select_columns = c('ProductSoldType', 'SmokerStatus', 'OccupationClassCode', 'DisabilityIncomeClass', 'AutoDeferredIndicator', 'NTUIndicator', 'LOAIndicator', 'ExclusionIndicator', 'AcceleratorIndicator', 'EducationID_Override', 'SumAssuredBand', 'ASS_ETHNIC_GROUP', 'PROVINCE', 'FARMER_IND', 'PROF_MARKET_IND', 'PUBLIC_SECTOR_IND', 'PUBLIC_SECTOR_TYPE', 'MARITAL_STATUS', 'GENDER'),
+           remove_selected_columns = TRUE)
+```
+ 
+ 
+```{r}
+set.seed(42)
+amelia(imput_data_dummy_var %>% select(-'ProductSoldType_Standalone With Accelerator', -SmokerStatus_SMOKER, -OccupationClassCode_E, -DisabilityIncomeClass_3, -AutoDeferredIndicator_Y, -NTUIndicator_Y, -LOAIndicator_Y, -ExclusionIndicator_Y,- AcceleratorIndicator_Y, -EducationID_Override_4, -`SumAssuredBand_M: R2,000,000.00 - R2,500,000.00`, -ASS_ETHNIC_GROUP_WHITE, -`PROVINCE_W CAPE`,- FARMER_IND_Y, -PROF_MARKET_IND_UNKNOWN, -PROF_MARKET_IND_Y, -PUBLIC_SECTOR_IND_UNKNOWN, -PUBLIC_SECTOR_IND_Y, -`PUBLIC_SECTOR_TYPE_WESTERN-CAPE PROVINCIAL GOVERMENT`, -MARITAL_STATUS_WIDOWED, -GENDER_MALE,-GENDER_UNKNOWN),m=5)
+```
+ 
+## Random MissForest
+```{r}
+miss_forest <- missForest(imput_data,maxiter=2,ntree=5)
+```
+
+```{r}
+sum(is.na(miss_forest$ximp$GammaGTValue))
+```
+```{r}
+?missForest
+```
+
+ ------------------------------
+```{r}
+save.image("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+```
+
+
+
