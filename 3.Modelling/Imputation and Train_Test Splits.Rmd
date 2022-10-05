@@ -1,6 +1,14 @@
-# Supervised Learning
+To Do:
+- Set identifier columns in the imputataion; specific argument or do I need to do the index thing again? Could maybe just not reset index and the end of the last PreProcessing step
 
-## Import Libraries
+- pick on imputation method to start. get it to work successfully. Looks like the CART in MICE might work, double check what it means
+
+- sort out the train test splits. Wide data has the least rows so needs to come from here. Do a counts to see what and 80/20 split gives me for all, pick a number of rows right now the middle. Get rows and indexes from wide set, filter other two datasets on the same indexes. Now I have my train test splits.
+
+- can repeat the process and create other train test split datasets.
+
+
+# Import Libraries
 ```{r message=FALSE, warning=FALSE}
 library(xgboost)
 library(tidyverse)
@@ -18,7 +26,7 @@ library('fastDummies')
 library(missForest)
 ```
 
-## Import Data
+# Import Data
 
 ```{r}
 # Mac
@@ -28,7 +36,7 @@ library(missForest)
 load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
 
 # load images
-# load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+# load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
 ```
 
 # Some more cleaning
@@ -59,50 +67,28 @@ df_wide <- df_wide %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPre
 to_be_imputed <- to_be_imputed %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
 ```
 
-
-
 # Imputation 
-
-## Set up data
-```{r}
-# copy train data 
-imput_train_df <- train_df
-
-#copy tet data
-imput_test_df <- test_df
-# make the test data target column nulls
-imput_test_df$GammaGTValue <- NA
-
-#combine into one
-imput_data <- imput_train_df %>% bind_rows(imput_test_df)
-```
 
 ## MICE
 ```{r}
 # system.time(
 # imp <- mice(imput_data,seed = 42) 
 # )
-# imp <- mice(imput_data,seed = 100)
-imp <- mice(imput_data,method='cart',seed = 42)
-# 
+imp <- mice(to_be_imputed,method='cart',seed = 42,m=2,maxit=2)
+# imp <- mice(head(to_be_imputed,1000),seed = 42) 
 
-# removing columns like I did for Amelia didnt work
-# imp <- mice(imput_data[,1:11],seed = 42) #ran into problems at the 11th column here
 
+sapply(imp$data, function(x) sum(is.na(x)))
 # this works
 # test <- imput_data %>% select_if(is.numeric)
-
 # imp <- mice(test,seed = 42)
-
 
 # imp$imp$GammaGTValue
 # meth = init$method
 # predM = init$predictorMatrix
 ```
 Error here. looks to be with highly correlted variables due to the factor vars I have. Need to either decide to remove, or use different methods for those ones.
-looks like it starts acting up at more than 31500 rows. Need to investigate further what's gonig on here.        
- ˆ
- 
+looks like it starts acting up at more than 31500 rows. Need to investigate further what's gonig on here.
  
 ## Amelia
 assumes varaibles follow multivariate normal distributions. Some transfaormations may be needed?
@@ -111,34 +97,22 @@ imput_data_dummy_var <- dummy_cols(imput_data, select_columns = c('ProductSoldTy
            remove_selected_columns = TRUE)
 ```
  
- 
 ```{r}
 set.seed(42)
 amelia(imput_data_dummy_var %>% select(-'ProductSoldType_Standalone With Accelerator', -SmokerStatus_SMOKER, -OccupationClassCode_E, -DisabilityIncomeClass_3, -AutoDeferredIndicator_Y, -NTUIndicator_Y, -LOAIndicator_Y, -ExclusionIndicator_Y,- AcceleratorIndicator_Y, -EducationID_Override_4, -`SumAssuredBand_M: R2,000,000.00 - R2,500,000.00`, -ASS_ETHNIC_GROUP_WHITE, -`PROVINCE_W CAPE`,- FARMER_IND_Y, -PROF_MARKET_IND_UNKNOWN, -PROF_MARKET_IND_Y, -PUBLIC_SECTOR_IND_UNKNOWN, -PUBLIC_SECTOR_IND_Y, -`PUBLIC_SECTOR_TYPE_WESTERN-CAPE PROVINCIAL GOVERMENT`, -MARITAL_STATUS_WIDOWED, -GENDER_MALE,-GENDER_UNKNOWN),m=5)
+
+
+amelia(to_be_imputed,m=1)
 ```
  
 ## Random MissForest
 ```{r}
-miss_forest <- missForest(imput_data,maxiter=2,ntree=5)
+miss_forest <- missForest(to_be_imputed %>% select(unique_id),maxiter=2,ntree=5)
 ```
 
 ```{r}
 sum(is.na(miss_forest$ximp$GammaGTValue))
 ```
-```{r}
-?missForest
-```
-
-###########################################################################################################################
-
-
-
-
-
-
-
-
-
 
 # Train-Test Split
 ```{r}
