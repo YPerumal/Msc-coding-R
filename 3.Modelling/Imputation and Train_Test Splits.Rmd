@@ -29,10 +29,12 @@ load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc -
 
 # load images
 # load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+```
 
+# Some more cleaning
+```{r}
+#finding zero variance columns; was an issue during imputation
 
-###################################################################################################
-#finding zero variance columns
 # zv <- apply(df_long %>% select_if(is.numeric), 2, function(x) length(unique(x)) == 1)
 # sum(zv)
 # zv
@@ -48,174 +50,16 @@ load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc -
 
 ```{r}
 # Remove highly correlated columns
-#Not sure if all should be removed or just some.
+# Not sure if all should be removed or just some.
+
 df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
 
 df_wide <- df_wide %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue) # might need to do the same exercise as above when I get to the imputation
 
-```
-
-## Train-Test Split for df_long
-```{r}
-# Create the training and test datasets
-set.seed(42)
-
-# Step 1: Get row numbers for the training data
-trainRowNumbers <- createDataPartition(df_long$GammaGTValue, p=0.8, list=FALSE)
-
-# Step 2: Create the training  dataset
-train_df <- df_long[trainRowNumbers,]
-x_train <- train_df %>% select(-GammaGTValue)
-y_train <- train_df %>% select(GammaGTValue)
-
-# Step 3: Create the test dataset
-test_df <- df_long[-trainRowNumbers,]
-x_test <- test_df %>% select(-GammaGTValue)
-y_test <- test_df %>% select(GammaGTValue)
-```
-
-```{r}
-std.dev <- sqrt(var(df_long$GammaGTValue))
+to_be_imputed <- to_be_imputed %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
 ```
 
 
-# Long Dataset
-## Decision Tree
-
-Used Rpart and Caret
-```{r}
-# Random forest
-# Set train control for cross-val
-dt_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = F)
-
-#rpart
-dt_grid <- expand.grid(cp = c(0.0001,0.001,0.01,0.05,0.1)) #Default for regression is 5. Controls tree size.
-
-# # rpart2
-# dt_grid <- expand.grid(maxdepth = c(5,10,20)
-#                        ) #Default for regression is 5. Controls tree size.
-
-set.seed(42)
-dt_gridsearch <- train(GammaGTValue ~ .,
-                       data = train_df,
-                       method = 'rpart',
-                       trControl = dt_ctrl
-                       ,tuneGrid = dt_grid #Here is the grid
-                       )
-
-# dt_gridsearch$bestTune
-# cp <- dt_gridsearch$bestTune[[1]]
-
-# train a final model to get variable importance plot
-# library(rpart)
-# dt_final <-  rpart(GammaGTValue ~ ., data = train_df,cp=cp)
-
-#Predictions
-dt_grid_pred <- predict(dt_gridsearch, newdata = test_df)
-dt_rmse_long <-  sqrt(mean((test_df$GammaGTValue- dt_grid_pred)^2))
-```
-
-```{r}
-
-```
-
-
-
-Using the Trees Library
-```{r}
-# set.seed(42)
-# 
-# tree_model <- tree(GammaGTValue ~ ., data=train_df)
-# summary(tree_model)
-# 
-# plot(tree_model)
-# text(tree_model, cex=0.8)
-# 
-# # cross validation
-# cv_tree <- cv.tree(tree_model)
-# plot(cv_tree$size, cv_tree$dev, type = 'b')
-# 
-# ## pruning
-# prune_tree <- prune.tree(tree_model, best = 2)
-# plot(prune_tree)
-# text(prune_tree, pretty=0, cex=0.8)
-# 
-# tree_yhat<- predict(tree_model, newdata=x_test)
-# tree_res <- data.frame(tree_yhat,y_test)
-# plot(tree_res$tree_yhat, tree_res$tree_yhat)
-# 
-# tree_rmse <- sqrt(mean((tree_yhat-y_test$GammaGTValue)^2))# MSE
-```
-
-
-## Random Forest Using Caret
-```{r}
-# Random forest
-# Set train control for cross-val
-rf_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = T)
-
-# Set grid search for hyperparaneter search
-rf_grid <- expand.grid(mtry = 10:20,
-                       splitrule = 'variance', #Have to specify. This is RSS for reg.
-                       min.node.size = c(5:10)) #Default for regression is 5. Controls tree size.
-
-# set.seed(42)
-rf_gridsearch <- train(GammaGTValue ~ ., 
-                       data = train_df,
-                       method = 'ranger',
-                       num.trees = 100,
-                       verbose = T,
-                       trControl = rf_ctrl
-                       ,tuneGrid = rf_grid #Here is the grid
-                       ) 
-
-# rf_gridsearch$bestTune
-# mtry <- rf_gridsearch$bestTune[[1]]
-# splitrule <- rf_gridsearch$bestTune[[2]]
-# min.node.size <- rf_gridsearch$bestTune[[3]]
-
-# train a final model to get variable importance plot
-# rf_final <- randomForest(GammaGTValue ~ ., data = train_df,
-#                            ntree = 10,
-#                            importance = TRUE,
-#                             mtry=mtry,
-#                             splitrule=splitrule,
-#                             min.node.size=min.node.size)
-
-#Predictions
-rf_grid_pred <- predict(rf_gridsearch, newdata = test_df)
-rf_rmse <-  sqrt(mean((test_df$GammaGTValue- rf_grid_pred)^2))
-```
-
-## XGB using Caret
-```{r}
-# XGboost model
-# train control for CV
-ctrl <-  trainControl(method = 'cv', number = 5, verboseIter = T)
-
-xgb_grid <- expand.grid(nrounds = c(50,100,200),      #B - number of trees
-                        max_depth = c(8:12),      #d - interaction depth
-                        eta = c(0.1,0.01),       #lambda - learning rate
-                        gamma = 0.001,            #mindev
-                        colsample_bytree = 0.8,     #proportion random features per tree
-                        min_child_weight = 1,     #also controls tree depth
-                        subsample = 0.8             #bootstrap proportion
-)
-
-
-xgb_final <- train(GammaGTValue ~ ., data = train_df,
-                 method = 'xgbTree',
-                 trControl = ctrl,
-                 verbose = F,
-                 tuneGrid = xgb_grid)
-
-#Predictions
-xgb_pred <- predict(xgb_final, test_df)
-xgb_rmse <- sqrt(mean((test_df$GammaGTValue - xgb_pred)^2))
-
-```
-
-#######################################################################
 
 # Imputation 
 
@@ -285,10 +129,36 @@ sum(is.na(miss_forest$ximp$GammaGTValue))
 ?missForest
 ```
 
- ------------------------------
+###########################################################################################################################
+
+
+
+
+
+
+
+
+
+
+# Train-Test Split
 ```{r}
-save.image("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+# Create the training and test datasets
+set.seed(42)
+
+# Step 1: Get row numbers for the training data
+trainRowNumbers <- createDataPartition(df_long$GammaGTValue, p=0.8, list=FALSE)
+
+# Step 2: Create the training  dataset
+train_df <- df_long[trainRowNumbers,]
+x_train <- train_df %>% select(-GammaGTValue)
+y_train <- train_df %>% select(GammaGTValue)
+
+# Step 3: Create the test dataset
+test_df <- df_long[-trainRowNumbers,]
+x_test <- test_df %>% select(-GammaGTValue)
+y_test <- test_df %>% select(GammaGTValue)
 ```
 
-
-
+```{r}
+save.image("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
+```
