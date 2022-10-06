@@ -330,7 +330,7 @@ dim(df_wide)
 # write.csv(df_wide,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/wide_data.csv", row.names=FALSE)
 
 # unqiue ID back to column back again
-df_wide <- tibble::rownames_to_column(df_wide, "unique_id")
+# df_wide <- tibble::rownames_to_column(df_wide, "unique_id")
 
 # df_wide
 ```
@@ -344,7 +344,7 @@ dim(df_long)
 # write.csv(df_long,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/long_data.csv", row.names=FALSE)
 
 # unqiue ID back to column back again
-df_long <- tibble::rownames_to_column(df_long, "unique_id")
+# df_long <- tibble::rownames_to_column(df_long, "unique_id")
 
 # df_long
 ```
@@ -414,8 +414,11 @@ sapply(t4, function(x) sum(is.na(x)))
 ```
 
 ```{r}
+# final df to be exported for imputation
+to_be_imputed <- t4
+
 # unqiue ID back to column back again
-to_be_imputed <- tibble::rownames_to_column(t4, "unique_id")
+# to_be_imputed <- tibble::rownames_to_column(t4, "unique_id")
 ```
 
 
