@@ -1,11 +1,34 @@
-To Do:
+Done:
 - Set identifier columns in the imputataion; specific argument or do I need to do the index thing again? Could maybe just not reset index and the end of the last PreProcessing step
 
 - pick on imputation method to start. get it to work successfully. Looks like the CART in MICE might work, double check what it means
 
+To Do:
+
+- combine the imputed MICE datasets into 1 final one. 
+
 - sort out the train test splits. Wide data has the least rows so needs to come from here. Do a counts to see what and 80/20 split gives me for all, pick a number of rows right now the middle. Get rows and indexes from wide set, filter other two datasets on the same indexes. Now I have my train test splits.
 
 - can repeat the process and create other train test split datasets.
+
+
+remake the wide and long from the imputed set by using indices.Actually will only be usefull for the long dataset
+
+decided to
+wide: complete case
+long: imputing data with a few missing cases
+all: missing data where some columns have a lot of missingness
+
+long and all will have same number of rows
+
+8000 rows test
+
+find how many rows I have of data without a complete gamma gt value; message stefan
+
+at some point in the methodology, when I write about the models I use - motivate why I picked the models I did. We are explicity using heuristics that are agnostic to the underlying physiological data. (i.e not using models from a medical context; you could but it's a lot more work.s o now we're using imputation + SL because it's a lot more data agnostic; does all the work; dont need medical expertise)
+
+Research objective:
+do the different types of data processing methods yielded by imputatuion affect model accuracy differently for the different models?
 
 
 # Import Libraries
@@ -65,7 +88,19 @@ df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPre
 df_wide <- df_wide %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue) # might need to do the same exercise as above when I get to the imputation
 
 to_be_imputed <- to_be_imputed %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
+
+
+dim(df_long)
+dim(df_wide)
+dim(to_be_imputed)
 ```
+
+```{r}
+# Visualise missingness
+md.pattern(to_be_imputed)
+```
+
+
 
 # Imputation 
 
@@ -74,7 +109,7 @@ to_be_imputed <- to_be_imputed %>% select(-CurrentCoverAmount,-WeightValue,-Syst
 # system.time(
 # imp <- mice(imput_data,seed = 42) 
 # )
-imp <- mice(to_be_imputed,method='cart',seed = 42,m=2,maxit=2)
+imp <- mice(to_be_imputed,method='cart',seed = 42,m=5,maxit=5)
 # imp <- mice(head(to_be_imputed,1000),seed = 42) 
 
 
@@ -90,10 +125,45 @@ sapply(imp$data, function(x) sum(is.na(x)))
 Error here. looks to be with highly correlted variables due to the factor vars I have. Need to either decide to remove, or use different methods for those ones.
 looks like it starts acting up at more than 31500 rows. Need to investigate further what's gonig on here.
  
+ 
+```{r}
+# first imputed dataset
+complete(imp,1)
+```
+```{r}
+# second imputed dataset
+complete(imp,2)
+```
+ 
+```{r}
+plot(imp)
+```
+ 
+```{r}
+# diagnostic checking to see if imputed values match
+stripplot(imp, chl~.imp, pch=20, cex=2)
+```
+ 
+
+```{r}
+summary(to_be_imputed)
+```
+ 
+```{r}
+summary(complete(imp))
+```
+compare means in the two summaries
+ 
+ 
+```{r}
+pool(imp)
+```
+ 
+ 
 ## Amelia
 assumes varaibles follow multivariate normal distributions. Some transfaormations may be needed?
 ```{r}
-imput_data_dummy_var <- dummy_cols(imput_data, select_columns = c('ProductSoldType', 'SmokerStatus', 'OccupationClassCode', 'DisabilityIncomeClass', 'AutoDeferredIndicator', 'NTUIndicator', 'LOAIndicator', 'ExclusionIndicator', 'AcceleratorIndicator', 'EducationID_Override', 'SumAssuredBand', 'ASS_ETHNIC_GROUP', 'PROVINCE', 'FARMER_IND', 'PROF_MARKET_IND', 'PUBLIC_SECTOR_IND', 'PUBLIC_SECTOR_TYPE', 'MARITAL_STATUS', 'GENDER'),
+imput_data_dummy_var <- dummy_cols(to_be_imputed, select_columns = c('ProductSoldType', 'SmokerStatus', 'OccupationClassCode', 'DisabilityIncomeClass', 'AutoDeferredIndicator', 'NTUIndicator', 'LOAIndicator', 'ExclusionIndicator', 'AcceleratorIndicator', 'EducationID_Override', 'SumAssuredBand', 'ASS_ETHNIC_GROUP', 'PROVINCE', 'FARMER_IND', 'PROF_MARKET_IND', 'PUBLIC_SECTOR_IND', 'PUBLIC_SECTOR_TYPE', 'MARITAL_STATUS', 'GENDER'),
            remove_selected_columns = TRUE)
 ```
  
@@ -107,12 +177,19 @@ amelia(to_be_imputed,m=1)
  
 ## Random MissForest
 ```{r}
-miss_forest <- missForest(to_be_imputed %>% select(unique_id),maxiter=2,ntree=5)
+miss_forest <- missForest(to_be_imputed,maxiter=5,ntree=5)
 ```
 
 ```{r}
-sum(is.na(miss_forest$ximp$GammaGTValue))
+miss_forest$ximp
 ```
+
+
+```{r}
+sum(is.na(miss_forest$ximp))
+```
+
+##########################################################################################################################
 
 # Train-Test Split
 ```{r}
