@@ -1,16 +1,5 @@
-Done:
-- Set identifier columns in the imputataion; specific argument or do I need to do the index thing again? Could maybe just not reset index and the end of the last PreProcessing step
-
-- pick on imputation method to start. get it to work successfully. Looks like the CART in MICE might work, double check what it means
 
 To Do:
-
-- combine the imputed MICE datasets into 1 final one. 
-
-- sort out the train test splits. Wide data has the least rows so needs to come from here. Do a counts to see what and 80/20 split gives me for all, pick a number of rows right now the middle. Get rows and indexes from wide set, filter other two datasets on the same indexes. Now I have my train test splits.
-
-- can repeat the process and create other train test split datasets.
-
 
 remake the wide and long from the imputed set by using indices.Actually will only be usefull for the long dataset
 
@@ -23,9 +12,7 @@ long and all will have same number of rows
 
 8000 rows test
 
-find how many rows I have of data without a complete gamma gt value; message stefan
 
-at some point in the methodology, when I write about the models I use - motivate why I picked the models I did. We are explicity using heuristics that are agnostic to the underlying physiological data. (i.e not using models from a medical context; you could but it's a lot more work.s o now we're using imputation + SL because it's a lot more data agnostic; does all the work; dont need medical expertise)
 
 Research objective:
 do the different types of data processing methods yielded by imputatuion affect model accuracy differently for the different models?
@@ -83,16 +70,20 @@ load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc -
 # Remove highly correlated columns
 # Not sure if all should be removed or just some.
 
-df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
+# df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
 
 df_wide <- df_wide %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue) # might need to do the same exercise as above when I get to the imputation
 
 to_be_imputed <- to_be_imputed %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
 
+# drop the cols with lots of missing values; the new 'long' dataset
+ to_be_imputed_less_cols <- to_be_imputed %>%select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,
+                                                                   -ANNUAL_INVESTMENT,-AUM)
 
-dim(df_long)
-dim(df_wide)
-dim(to_be_imputed)
+
+# dim(df_long)
+# dim(df_wide)
+# dim(to_be_imputed)
 ```
 
 ```{r}
@@ -103,6 +94,25 @@ md.pattern(to_be_imputed)
 
 
 # Imputation 
+
+ 
+## Random MissForest
+```{r}
+# all data imputatioan
+miss_forest_imp <- missForest(to_be_imputed,maxiter=5,ntree=5)
+miss_forest_imputed_all_df <-  miss_forest_imp$ximp
+```
+
+```{r}
+# long dataset imputation
+miss_forest_imp_less_cols <- missForest(to_be_imputed_less_cols,maxiter=5,ntree=5)
+miss_forest_imputed_less_cols_df <-  miss_forest_imp_less_cols$ximp
+```
+
+
+```{r}
+sum(is.na(miss_forest$ximp))
+```
 
 ## MICE
 ```{r}
@@ -158,8 +168,8 @@ compare means in the two summaries
 ```{r}
 pool(imp)
 ```
- 
- 
+
+
 ## Amelia
 assumes varaibles follow multivariate normal distributions. Some transfaormations may be needed?
 ```{r}
@@ -174,21 +184,6 @@ amelia(imput_data_dummy_var %>% select(-'ProductSoldType_Standalone With Acceler
 
 amelia(to_be_imputed,m=1)
 ```
- 
-## Random MissForest
-```{r}
-miss_forest <- missForest(to_be_imputed,maxiter=5,ntree=5)
-```
-
-```{r}
-miss_forest$ximp
-```
-
-
-```{r}
-sum(is.na(miss_forest$ximp))
-```
-
 ##########################################################################################################################
 
 # Train-Test Split
@@ -197,18 +192,36 @@ sum(is.na(miss_forest$ximp))
 set.seed(42)
 
 # Step 1: Get row numbers for the training data
-trainRowNumbers <- createDataPartition(df_long$GammaGTValue, p=0.8, list=FALSE)
+trainRowNumbers <- createDataPartition(df_wide$GammaGTValue, p=0.74, list=FALSE)
 
 # Step 2: Create the training  dataset
-train_df <- df_long[trainRowNumbers,]
-x_train <- train_df %>% select(-GammaGTValue)
-y_train <- train_df %>% select(GammaGTValue)
+wide_train_df <- df_wide[trainRowNumbers,]
+
+wide_x_train <- wide_train_df %>% select(-GammaGTValue)
+wide_y_train <- wide_train_df %>% select(GammaGTValue)
 
 # Step 3: Create the test dataset
-test_df <- df_long[-trainRowNumbers,]
-x_test <- test_df %>% select(-GammaGTValue)
-y_test <- test_df %>% select(GammaGTValue)
+wide_test_df <- df_wide[-trainRowNumbers,]
+
+wide_x_test <- test_df %>% select(-GammaGTValue)
+wide_y_test <- test_df %>% select(GammaGTValue)
 ```
+
+```{r}
+# This is the test DF for all the models to be tested on
+mf_test_df <- miss_forest_imputed_all_df[tibble::rownames_to_column(wide_test_df)$rowname,]
+
+mf_train_df <-  anti_join(tibble::rownames_to_column(miss_forest_imputed_all_df),tibble::rownames_to_column(mf_test_df),by=c("rowname" = "rowname"))
+
+```
+
+```{r}
+mf_train_df <- miss_forest_imputed_all_df[trainRowNumbers,]
+mf_test_df <- miss_forest_imputed_all_df[-trainRowNumbers,]
+```
+```
+
+
 
 ```{r}
 save.image("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
