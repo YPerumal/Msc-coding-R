@@ -1,4 +1,4 @@
-## Import Libraries
+# Import Libraries
 ```{r message=FALSE, warning=FALSE}
 library(xgboost)
 library(tidyverse)
@@ -16,54 +16,54 @@ library('fastDummies')
 library(missForest)
 ```
 
-
+# Import datasets 
+```{r}
+load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
+```
 
 # Basic Baseline
 ```{r}
-std.dev <- sqrt(var(df_long$GammaGTValue))
+std.dev <- sqrt(var(df_wide$GammaGTValue))
 ```
 
 
 # Long Dataset
 ## Decision Tree
 
+-- Gonna can this for the moment
+
 Used Rpart and Caret
 ```{r}
 # Random forest
 # Set train control for cross-val
-dt_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = F)
-
-#rpart
-dt_grid <- expand.grid(cp = c(0.0001,0.001,0.01,0.05,0.1)) #Default for regression is 5. Controls tree size.
-
-# # rpart2
-# dt_grid <- expand.grid(maxdepth = c(5,10,20)
-#                        ) #Default for regression is 5. Controls tree size.
-
-set.seed(42)
-dt_gridsearch <- train(GammaGTValue ~ .,
-                       data = train_df,
-                       method = 'rpart',
-                       trControl = dt_ctrl
-                       ,tuneGrid = dt_grid #Here is the grid
-                       )
-
-# dt_gridsearch$bestTune
-# cp <- dt_gridsearch$bestTune[[1]]
-
-# train a final model to get variable importance plot
-# library(rpart)
-# dt_final <-  rpart(GammaGTValue ~ ., data = train_df,cp=cp)
-
-#Predictions
-dt_grid_pred <- predict(dt_gridsearch, newdata = test_df)
-dt_rmse_long <-  sqrt(mean((test_df$GammaGTValue- dt_grid_pred)^2))
+# dt_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = F)
+# 
+# #rpart
+# dt_grid <- expand.grid(cp = c(0.0001,0.001,0.01,0.05,0.1)) #Default for regression is 5. Controls tree size.
+# 
+# # # rpart2
+# # dt_grid <- expand.grid(maxdepth = c(5,10,20)
+# #                        ) #Default for regression is 5. Controls tree size.
+# 
+# set.seed(42)
+# dt_gridsearch <- train(GammaGTValue ~ .,
+#                        data = train_df,
+#                        method = 'rpart',
+#                        trControl = dt_ctrl
+#                        ,tuneGrid = dt_grid #Here is the grid
+#                        )
+# 
+# # dt_gridsearch$bestTune
+# # cp <- dt_gridsearch$bestTune[[1]]
+# 
+# # train a final model to get variable importance plot
+# # library(rpart)
+# # dt_final <-  rpart(GammaGTValue ~ ., data = train_df,cp=cp)
+# 
+# #Predictions
+# dt_grid_pred <- predict(dt_gridsearch, newdata = test_df)
+# dt_rmse_long <-  sqrt(mean((test_df$GammaGTValue- dt_grid_pred)^2))
 ```
-
-```{r}
-
-```
-
 
 
 Using the Trees Library
@@ -106,7 +106,7 @@ rf_grid <- expand.grid(mtry = 10:20,
 
 # set.seed(42)
 rf_gridsearch <- train(GammaGTValue ~ ., 
-                       data = train_df,
+                       data = wide_train_df,
                        method = 'ranger',
                        num.trees = 100,
                        verbose = T,

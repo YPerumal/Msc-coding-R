@@ -42,11 +42,11 @@ library(missForest)
 # Mac
 # load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
 
-# Windows load tables saved as Rdata to preserve types
-load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
+# Windows load tables saved as Rdata to preserve types from PreProcessing v2
+# load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
 
 # load images
-# load("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
+load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
 ```
 
 # Some more cleaning
@@ -77,7 +77,7 @@ df_wide <- df_wide %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPre
 to_be_imputed <- to_be_imputed %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
 
 # drop the cols with lots of missing values; the new 'long' dataset
- to_be_imputed_less_cols <- to_be_imputed %>%select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,
+to_be_imputed_less_cols <- to_be_imputed %>%select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,
                                                                    -ANNUAL_INVESTMENT,-AUM)
 
 
@@ -99,20 +99,18 @@ md.pattern(to_be_imputed)
 ## Random MissForest
 ```{r}
 # all data imputatioan
-miss_forest_imp <- missForest(to_be_imputed,maxiter=5,ntree=5)
+miss_forest_imp <- missForest(to_be_imputed,maxiter=1,ntree=2)
 miss_forest_imputed_all_df <-  miss_forest_imp$ximp
+
+# sum(is.na(miss_forest$ximp))
 ```
 
 ```{r}
-# long dataset imputation
-miss_forest_imp_less_cols <- missForest(to_be_imputed_less_cols,maxiter=5,ntree=5)
+# "long" dataset imputation
+miss_forest_imp_less_cols <- missForest(to_be_imputed_less_cols,maxiter=1,ntree=2)
 miss_forest_imputed_less_cols_df <-  miss_forest_imp_less_cols$ximp
 ```
-
-
-```{r}
-sum(is.na(miss_forest$ximp))
-```
+DOing the exact same imputation stucture as the full set. i.e. testing if having more variables, even ones with lots of missingness, is able to confer an advatange to performance 
 
 ## MICE
 ```{r}
@@ -197,32 +195,31 @@ trainRowNumbers <- createDataPartition(df_wide$GammaGTValue, p=0.74, list=FALSE)
 # Step 2: Create the training  dataset
 wide_train_df <- df_wide[trainRowNumbers,]
 
-wide_x_train <- wide_train_df %>% select(-GammaGTValue)
-wide_y_train <- wide_train_df %>% select(GammaGTValue)
+# wide_x_train <- wide_train_df %>% select(-GammaGTValue)
+# wide_y_train <- wide_train_df %>% select(GammaGTValue)
 
 # Step 3: Create the test dataset
 wide_test_df <- df_wide[-trainRowNumbers,]
 
-wide_x_test <- test_df %>% select(-GammaGTValue)
-wide_y_test <- test_df %>% select(GammaGTValue)
+# wide_x_test <- wide_test_df %>% select(-GammaGTValue)
+# wide_y_test <- wide_test_df %>% select(GammaGTValue)
 ```
 
 ```{r}
-# This is the test DF for all the models to be tested on
+# This is the test DF for ***all** the models to be tested on
 mf_test_df <- miss_forest_imputed_all_df[tibble::rownames_to_column(wide_test_df)$rowname,]
 
 mf_train_df <-  anti_join(tibble::rownames_to_column(miss_forest_imputed_all_df),tibble::rownames_to_column(mf_test_df),by=c("rowname" = "rowname"))
 
 ```
+mf_test_df wont match wide_test_df 100% because of the different preprocessing treatment for nulls in the preprocessing (i.e. manually filling values, imputing with mean/median etc.). But the indexing method ensures that the training set for teh "wide" data is completely separate from any rows in the test set so it doesnt get an advantage there. 
 
 ```{r}
-mf_train_df <- miss_forest_imputed_all_df[trainRowNumbers,]
-mf_test_df <- miss_forest_imputed_all_df[-trainRowNumbers,]
+mf_train_less_cols_df <-  anti_join(tibble::rownames_to_column(miss_forest_imputed_less_cols_df),tibble::rownames_to_column(mf_test_df),by=c("rowname" = "rowname"))
 ```
-```
-
-
+This is the trainig data for the "long" model
 
 ```{r}
-save.image("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
+save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
 ```
+
