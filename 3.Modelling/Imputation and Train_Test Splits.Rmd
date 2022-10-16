@@ -1,22 +1,7 @@
-
-To Do:
-
-remake the wide and long from the imputed set by using indices.Actually will only be usefull for the long dataset
-
-decided to
-wide: complete case
-long: imputing data with a few missing cases
-all: missing data where some columns have a lot of missingness
-
-long and all will have same number of rows
-
-8000 rows test
-
-
-
-Research objective:
-do the different types of data processing methods yielded by imputatuion affect model accuracy differently for the different models?
-
+decided on
+"wide": complete case; all my preprocessing, drop all null rows
+All: Remove all preprocessing related to dropping because of nulls, but keep the rest
+All_less cols: All dataset from above, but without the CDW fields that have a very high % of data missing
 
 # Import Libraries
 ```{r message=FALSE, warning=FALSE}
@@ -99,18 +84,16 @@ md.pattern(to_be_imputed)
 ## Random MissForest
 ```{r}
 # all data imputatioan
-miss_forest_imp <- missForest(to_be_imputed,maxiter=1,ntree=2)
-miss_forest_imputed_all_df <-  miss_forest_imp$ximp
-
+miss_forest_imp <- missForest(to_be_imputed,maxiter=1,ntree=1)
 # sum(is.na(miss_forest$ximp))
 ```
 
 ```{r}
 # "long" dataset imputation
-miss_forest_imp_less_cols <- missForest(to_be_imputed_less_cols,maxiter=1,ntree=2)
-miss_forest_imputed_less_cols_df <-  miss_forest_imp_less_cols$ximp
+miss_forest_imp_less_cols <- missForest(to_be_imputed_less_cols,maxiter=1,ntree=1)
 ```
-DOing the exact same imputation stucture as the full set. i.e. testing if having more variables, even ones with lots of missingness, is able to confer an advatange to performance 
+Doing the exact same imputation stucture as the full set. i.e. testing if having more variables, even ones with lots of missingness, is able to confer an advatange to performance 
+
 
 ## MICE
 ```{r}
@@ -183,8 +166,9 @@ amelia(imput_data_dummy_var %>% select(-'ProductSoldType_Standalone With Acceler
 amelia(to_be_imputed,m=1)
 ```
 ##########################################################################################################################
+#Train-Test Splits
 
-# Train-Test Split
+## Train-Test Split for Wide Dataset
 ```{r}
 # Create the training and test datasets
 set.seed(42)
@@ -195,29 +179,43 @@ trainRowNumbers <- createDataPartition(df_wide$GammaGTValue, p=0.74, list=FALSE)
 # Step 2: Create the training  dataset
 wide_train_df <- df_wide[trainRowNumbers,]
 
-# wide_x_train <- wide_train_df %>% select(-GammaGTValue)
-# wide_y_train <- wide_train_df %>% select(GammaGTValue)
-
 # Step 3: Create the test dataset
 wide_test_df <- df_wide[-trainRowNumbers,]
-
-# wide_x_test <- wide_test_df %>% select(-GammaGTValue)
-# wide_y_test <- wide_test_df %>% select(GammaGTValue)
 ```
 
+## Train-Test Split for Random MissFOrest "All" Dataset
 ```{r}
-# This is the test DF for ***all** the models to be tested on
-mf_test_df <- miss_forest_imputed_all_df[tibble::rownames_to_column(wide_test_df)$rowname,]
+# This is the test DF for ***all** the models to be tested on for missforest; see note below
+mf_test_df <- miss_forest_imp$ximp[tibble::rownames_to_column(wide_test_df)$rowname,]
 
-mf_train_df <-  anti_join(tibble::rownames_to_column(miss_forest_imputed_all_df),tibble::rownames_to_column(mf_test_df),by=c("rowname" = "rowname"))
+mf_train_df <-  anti_join(tibble::rownames_to_column(miss_forest_imp$ximp),tibble::rownames_to_column(mf_test_df),by=c("rowname" = "rowname"))
+# move key back to being the df rowname
+rownames(mf_train_df) <- mf_train_df$rowname
+mf_train_df <- mf_train_df %>% select(-rowname)
 
 ```
 mf_test_df wont match wide_test_df 100% because of the different preprocessing treatment for nulls in the preprocessing (i.e. manually filling values, imputing with mean/median etc.). But the indexing method ensures that the training set for teh "wide" data is completely separate from any rows in the test set so it doesnt get an advantage there. 
 
+## Train-Test Split for Random MissFOrest "All Less CDW" Dataset
 ```{r}
-mf_train_less_cols_df <-  anti_join(tibble::rownames_to_column(miss_forest_imputed_less_cols_df),tibble::rownames_to_column(mf_test_df),by=c("rowname" = "rowname"))
+# imputation but without the CDW columns with high missingness
+mf_train_less_cols_df <-  anti_join(tibble::rownames_to_column(miss_forest_imp_less_cols$ximp),tibble::rownames_to_column(mf_test_df),by=c("rowname" = "rowname"))
+# move key back to being the df rowname
+rownames(mf_train_less_cols_df) <- mf_train_less_cols_df$rowname
+mf_train_less_cols_df <- mf_train_less_cols_df %>% select(-rowname)
 ```
 This is the trainig data for the "long" model
+
+## Train_Test Split for MICE
+```{r}
+# All dataset
+```
+
+```{r}
+# All less CDW Dataset
+```
+
+
 
 ```{r}
 save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
