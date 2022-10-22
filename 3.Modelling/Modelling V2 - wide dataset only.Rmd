@@ -7,7 +7,7 @@ library(randomForest)
 library(ggplot2)
 library(rpart)
 library(tree)
-
+library(beepr)
 #Imputation
 library(mice)
 library(Amelia)
@@ -22,7 +22,7 @@ library(missForest)
 # load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
 
 # Current saved workspace
-load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata/modelling_image.Rdata")
+load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
 ```
 
 # Basic Baseline
@@ -219,8 +219,6 @@ xgb_mf_all_test_rmse
 xgb_mf_less_cols_test_rmse <- xgb_func(mf_train_less_cols_df,mf_test_df)
 xgb_mf_less_cols_test_rmse
 ```
-
-
 ```{r}
-save.image("/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
 ```

@@ -12,13 +12,14 @@ library(randomForest)
 library(ggplot2)
 library(rpart)
 library(tree)
-
+library(beepr)
 #Imputation
 library(mice)
 library(Amelia)
 library(Rcpp)
 library('fastDummies')
 library(missForest)
+library(miceRanger)
 ```
 
 # Import Data
@@ -59,7 +60,7 @@ load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc -
 
 df_wide <- df_wide %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue) # might need to do the same exercise as above when I get to the imputation
 
-to_be_imputed <- to_be_imputed %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
+to_be_imputed <- to_be_imputed %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue,)
 
 # drop the cols with lots of missing values; the new 'long' dataset
 to_be_imputed_less_cols <- to_be_imputed %>%select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,
@@ -84,27 +85,57 @@ md.pattern(to_be_imputed)
 ## Random MissForest
 ```{r}
 # all data imputatioan
-miss_forest_imp <- missForest(to_be_imputed,maxiter=1,ntree=1)
+
+
+system.time({ miss_forest_imp <- missForest(to_be_imputed, maxiter = 2,ntree = 5,mtry = 2)})
+
+# defutls
+# system.time({ miss_forest_imp <- missForest(to_be_imputed, maxiter = 10,ntree = 100,mtry = floor(sqrt(ncol(xmis))))})
+
+
 # sum(is.na(miss_forest$ximp))
 ```
 
 ```{r}
 # "long" dataset imputation
-miss_forest_imp_less_cols <- missForest(to_be_imputed_less_cols,maxiter=1,ntree=1)
+miss_forest_imp_less_cols <- missForest(to_be_imputed_less_cols)
 ```
 Doing the exact same imputation stucture as the full set. i.e. testing if having more variables, even ones with lots of missingness, is able to confer an advatange to performance 
 
 
 ## MICE
 ```{r}
-# system.time(
-# imp <- mice(imput_data,seed = 42) 
-# )
-imp <- mice(to_be_imputed,method='cart',seed = 42,m=5,maxit=5)
-# imp <- mice(head(to_be_imputed,1000),seed = 42) 
+#works
+system.time(
+imp <-  mice(to_be_imputed,method='cart',seed = 42,m=2,maxit=2)
+)
+beep()
+# 17 mins
 
+#doesn't work...I think?
+system.time(
+imp <-  mice(to_be_imputed,method='rf',seed = 42,m=2,maxit=5)
+)
+beep()
+# 17 mins
+
+# This works, removing all the high factor vards
+system.time(
+imp <-  mice(to_be_imputed %>% select(-PUBLIC_SECTOR_TYPE,-MARITAL_STATUS,-SumAssuredBand),
+           seed = 42,m=2,maxit=2)
+)
+
+beep()
+
+# This works, removing all the high factor vards
+system.time(
+imp <-  mice(to_be_imputed %>% select(-PUBLIC_SECTOR_TYPE,-MARITAL_STATUS,-SumAssuredBand ),
+           seed = 42,m=2,maxit=2,method = 'rf')
+)
+beep()
 
 sapply(imp$data, function(x) sum(is.na(x)))
+
 # this works
 # test <- imput_data %>% select_if(is.numeric)
 # imp <- mice(test,seed = 42)
@@ -121,6 +152,7 @@ looks like it starts acting up at more than 31500 rows. Need to investigate furt
 # first imputed dataset
 complete(imp,1)
 ```
+
 ```{r}
 # second imputed dataset
 complete(imp,2)
@@ -148,6 +180,16 @@ compare means in the two summaries
  
 ```{r}
 pool(imp)
+```
+
+
+## miceRanger
+```{r}
+# https://github.com/FarrellDay/miceRanger
+system.time(
+mice_range_imp <- miceRanger(to_be_imputed %>% select(-PUBLIC_SECTOR_TYPE,-MARITAL_STATUS,-SumAssuredBand),m=2,maxiter = 2) 
+)
+beep()
 ```
 
 
@@ -209,6 +251,8 @@ This is the trainig data for the "long" model
 ## Train_Test Split for MICE
 ```{r}
 # All dataset
+
+
 ```
 
 ```{r}
