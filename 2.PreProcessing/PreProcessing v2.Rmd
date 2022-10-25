@@ -147,7 +147,7 @@ factor_cols <-  c(
          )   
 
 ```
-The columns above just looked useless from eyeballing and seeing what they are
+The columns above just looked useless from EDA and seeing what they are
 
 
 
@@ -265,9 +265,6 @@ data_cleaning_num_outliers <- function(data){
 }
 ```
 
-
-
-
 ## Convert char to factor
 ```{r}
 data_cleaning_factor_cols <- function(data){
@@ -337,9 +334,9 @@ dim(df_wide)
 
 ```{r}
 # dataset dropping CDW columns, but with more rows. 
-df_long <- df4 %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)
+# df_long <- df4 %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM)
 
-dim(df_long)
+# dim(df_long)
 
 # write.csv(df_long,"/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/long_data.csv", row.names=FALSE)
 
@@ -422,7 +419,7 @@ to_be_imputed <- t4
 ```
 
 
-Deal with highly correlated variables(should've done a corrplot in the EDA)
+## Deal with highly correlated variables(should've done a corrplot in the EDA)
 ```{r}
 # library(caret)
 # df_corr = cor(data %>% select_if(is.numeric) %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM))
@@ -435,8 +432,69 @@ Deal with highly correlated variables(should've done a corrplot in the EDA)
 ```
 
 
+# Some more cleaning
+```{r}
+#finding zero variance columns; was an issue during imputation
+
+# zv <- apply(df_long %>% select_if(is.numeric), 2, function(x) length(unique(x)) == 1)
+# sum(zv)
+# zv
+
+# Find names of highly correlated columns
+# df_corr = cor(df_long %>% select_if(is.numeric))
+# hc = findCorrelation(df_corr, cutoff=0.6) # putt any value as a "cutoff"
+# hc = sort(hc)
+# #the name of the columns chosen above
+# to_be_removed <- colnames(df_corr)[hc]
+```
+
+
+```{r}
+# Remove highly correlated columns
+# Not sure if all should be removed or just some.
+
+# df_long <- df_long %>% select(-CurrentCoverAmount,-WeightValue,-SystolicBloodPressureValue,-NumberOfDeferrals,-ClientBMIValue)
+
+df_wide <- df_wide %>% select(-CurrentCoverAmount
+                              ,-WeightValue
+                              ,-SystolicBloodPressureValue
+                              ,-NumberOfDeferrals
+                              ,-ClientBMIValue) # might need to do the same exercise as above when I get to the imputation
+
+to_be_imputed <- to_be_imputed %>% select(-CurrentCoverAmount
+                                          ,-WeightValue
+                                          ,-SystolicBloodPressureValue
+                                          ,-NumberOfDeferrals
+                                          ,-ClientBMIValue)
+
+# drop the cols with lots of missing values; the new 'long' dataset
+to_be_imputed_less_cols <- to_be_imputed %>%select(-AGE
+                                                   ,-ALL_BEN_COUNT
+                                                   ,-ALL_CONTRACT_COUNT
+                                                   ,-ANNUAL_INVESTMENT
+                                                   ,-AUM)
+
+
+# dim(df_long)
+# dim(df_wide)
+# dim(to_be_imputed)
+```
+
+# Factor columns with way too many categories
+```{r}
+# Drop em like it's hot
+df_wide <- df_wide %>% select(-PUBLIC_SECTOR_TYPE,-MARITAL_STATUS,-SumAssuredBand)
+to_be_imputed <- to_be_imputed %>% select(-PUBLIC_SECTOR_TYPE,-MARITAL_STATUS,-SumAssuredBand)
+to_be_imputed_less_cols <- to_be_imputed_less_cols %>% select(-PUBLIC_SECTOR_TYPE,-MARITAL_STATUS,-SumAssuredBand)
+```
+
+
 ## Save all datasets in and R object to preserve data types
 ```{r}
-save(df_wide,df_long,to_be_imputed,file = "C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_modelling.Rdata")
+save(df_wide
+     # ,df_long
+     ,to_be_imputed
+     ,to_be_imputed_less_cols
+     ,file = "C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_imputation.Rdata")
 ```
 
