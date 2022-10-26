@@ -32,6 +32,20 @@ load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc -
 ```
 
 
+The datasets seem to have too many columns so I need to drop a few more. Since I want to keep the columns with missing values, might need to trop some of the others
+```{r}
+size_decrease_cols <- c("ProductSoldType"
+                        ,"NTUIndicator"
+                        ,"EducationID"#should probably have rm this anyway
+                        ,"NumberOfFailedLevel1Evaluations"
+                        ,"NumberOfFailedDetailEvaluations")
+
+to_be_imputed <- to_be_imputed %>% select(-all_of(size_decrease_cols))
+
+```
+
+
+
 ```{r}
 # Visualise missingness
 md.pattern(to_be_imputed)
@@ -145,10 +159,10 @@ pool(imp)
 ```{r}
 # https://github.com/FarrellDay/miceRanger
 # not working
-# system.time(
-# mice_range_imp <- miceRanger(to_be_imputed,m=2,maxiter = 2) 
-# )
-# beep()
+system.time(
+mice_range_imp <- miceRanger(to_be_imputed,m=2,maxiter = 2)
+)
+beep()
 ```
 
 
@@ -223,7 +237,7 @@ This is the trainig data for the "long" model
 ```
 
 
-
+# Save
 ```{r}
 save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
 ```
