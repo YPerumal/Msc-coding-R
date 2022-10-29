@@ -40,10 +40,15 @@ size_decrease_cols <- c("ProductSoldType"
                         ,"NumberOfFailedLevel1Evaluations"
                         ,"NumberOfFailedDetailEvaluations")
 
+df_wide <- df_wide %>% select(-all_of(size_decrease_cols))
 to_be_imputed <- to_be_imputed %>% select(-all_of(size_decrease_cols))
+to_be_imputed_less_cols <- to_be_imputed_less_cols %>% select(-all_of(size_decrease_cols))
 
 ```
 
+```{r}
+
+```
 
 
 ```{r}
@@ -63,6 +68,7 @@ system.time(
     miss_forest_imp <- missForest(to_be_imputed, maxiter = 2,ntree = 5,mtry = 2)
 )
 beep()
+
 
 # defutls
 # system.time({ miss_forest_imp <- missForest(to_be_imputed, maxiter = 10,ntree = 100,mtry = floor(sqrt(ncol(xmis))))})
@@ -96,7 +102,18 @@ system.time(
 imp <-  mice(to_be_imputed,seed = 42,m=5,maxit=5)
 )
 beep()
-# 10 mins
+# 40 mins
+
+sapply(imp$data, function(x) sum(is.na(x)))
+
+
+#works
+system.time(
+# imp <-  mice(to_be_imputed,seed = 42,m=2,maxit=2)
+imp_less_cols <-  mice(to_be_imputed_less,seed = 42,m=5,maxit=5)
+)
+beep()
+# 40 mins
 
 sapply(imp$data, function(x) sum(is.na(x)))
 
@@ -133,6 +150,8 @@ complete(imp,2)
 ```{r}
 plot(imp)
 ```
+ Education ID override is weird
+ 
  
 ```{r}
 # diagnostic checking to see if imputed values match
@@ -154,32 +173,6 @@ compare means in the two summaries
 pool(imp)
 ```
 
-
-## miceRanger
-```{r}
-# https://github.com/FarrellDay/miceRanger
-# not working
-system.time(
-mice_range_imp <- miceRanger(to_be_imputed,m=2,maxiter = 2)
-)
-beep()
-```
-
-
-## Amelia
-assumes varaibles follow multivariate normal distributions. Some transfaormations may be needed?
-```{r}
-# imput_data_dummy_var <- dummy_cols(to_be_imputed, select_columns = c('ProductSoldType', 'SmokerStatus', 'OccupationClassCode', 'DisabilityIncomeClass', 'AutoDeferredIndicator', 'NTUIndicator', 'LOAIndicator', 'ExclusionIndicator', 'AcceleratorIndicator', 'EducationID_Override', 'SumAssuredBand', 'ASS_ETHNIC_GROUP', 'PROVINCE', 'FARMER_IND', 'PROF_MARKET_IND', 'PUBLIC_SECTOR_IND', 'PUBLIC_SECTOR_TYPE', 'MARITAL_STATUS', 'GENDER'),
-#            remove_selected_columns = TRUE)
-```
- 
-```{r}
-# set.seed(42)
-# amelia(imput_data_dummy_var %>% select(-'ProductSoldType_Standalone With Accelerator', -SmokerStatus_SMOKER, -OccupationClassCode_E, -DisabilityIncomeClass_3, -AutoDeferredIndicator_Y, -NTUIndicator_Y, -LOAIndicator_Y, -ExclusionIndicator_Y,- AcceleratorIndicator_Y, -EducationID_Override_4, -`SumAssuredBand_M: R2,000,000.00 - R2,500,000.00`, -ASS_ETHNIC_GROUP_WHITE, -`PROVINCE_W CAPE`,- FARMER_IND_Y, -PROF_MARKET_IND_UNKNOWN, -PROF_MARKET_IND_Y, -PUBLIC_SECTOR_IND_UNKNOWN, -PUBLIC_SECTOR_IND_Y, -`PUBLIC_SECTOR_TYPE_WESTERN-CAPE PROVINCIAL GOVERMENT`, -MARITAL_STATUS_WIDOWED, -GENDER_MALE,-GENDER_UNKNOWN),m=5)
-# 
-# 
-# amelia(to_be_imputed,m=1)
-```
 
 
 
@@ -241,4 +234,22 @@ This is the trainig data for the "long" model
 ```{r}
 save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
 ```
+
+
+# Extra code
+## Amelia
+assumes varaibles follow multivariate normal distributions. Some transfaormations may be needed?
+```{r}
+# imput_data_dummy_var <- dummy_cols(to_be_imputed, select_columns = c('ProductSoldType', 'SmokerStatus', 'OccupationClassCode', 'DisabilityIncomeClass', 'AutoDeferredIndicator', 'NTUIndicator', 'LOAIndicator', 'ExclusionIndicator', 'AcceleratorIndicator', 'EducationID_Override', 'SumAssuredBand', 'ASS_ETHNIC_GROUP', 'PROVINCE', 'FARMER_IND', 'PROF_MARKET_IND', 'PUBLIC_SECTOR_IND', 'PUBLIC_SECTOR_TYPE', 'MARITAL_STATUS', 'GENDER'),
+#            remove_selected_columns = TRUE)
+```
+ 
+```{r}
+# set.seed(42)
+# amelia(imput_data_dummy_var %>% select(-'ProductSoldType_Standalone With Accelerator', -SmokerStatus_SMOKER, -OccupationClassCode_E, -DisabilityIncomeClass_3, -AutoDeferredIndicator_Y, -NTUIndicator_Y, -LOAIndicator_Y, -ExclusionIndicator_Y,- AcceleratorIndicator_Y, -EducationID_Override_4, -`SumAssuredBand_M: R2,000,000.00 - R2,500,000.00`, -ASS_ETHNIC_GROUP_WHITE, -`PROVINCE_W CAPE`,- FARMER_IND_Y, -PROF_MARKET_IND_UNKNOWN, -PROF_MARKET_IND_Y, -PUBLIC_SECTOR_IND_UNKNOWN, -PUBLIC_SECTOR_IND_Y, -`PUBLIC_SECTOR_TYPE_WESTERN-CAPE PROVINCIAL GOVERMENT`, -MARITAL_STATUS_WIDOWED, -GENDER_MALE,-GENDER_UNKNOWN),m=5)
+# 
+# 
+# amelia(to_be_imputed,m=1)
+```
+
 
