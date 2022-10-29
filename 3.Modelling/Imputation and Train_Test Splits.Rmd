@@ -39,17 +39,12 @@ size_decrease_cols <- c("ProductSoldType"
                         ,"EducationID"#should probably have rm this anyway
                         ,"NumberOfFailedLevel1Evaluations"
                         ,"NumberOfFailedDetailEvaluations")
-
-df_wide <- df_wide %>% select(-all_of(size_decrease_cols))
-to_be_imputed <- to_be_imputed %>% select(-all_of(size_decrease_cols))
-to_be_imputed_less_cols <- to_be_imputed_less_cols %>% select(-all_of(size_decrease_cols))
-
-```
-
-```{r}
+# 
+# df_wide <- df_wide %>% select(-all_of(size_decrease_cols))
+# to_be_imputed <- to_be_imputed %>% select(-all_of(size_decrease_cols))
+# to_be_imputed_less_cols <- to_be_imputed_less_cols %>% select(-all_of(size_decrease_cols))
 
 ```
-
 
 ```{r}
 # Visualise missingness
@@ -110,10 +105,10 @@ sapply(imp$data, function(x) sum(is.na(x)))
 #works
 system.time(
 # imp <-  mice(to_be_imputed,seed = 42,m=2,maxit=2)
-imp_less_cols <-  mice(to_be_imputed_less,seed = 42,m=5,maxit=5)
+imp_less_cols <-  mice(to_be_imputed_less_cols,seed = 5,m=5,maxit=5)
 )
 beep()
-# 40 mins
+# 32 mins
 
 sapply(imp$data, function(x) sum(is.na(x)))
 
