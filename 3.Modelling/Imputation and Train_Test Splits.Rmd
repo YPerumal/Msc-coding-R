@@ -3,20 +3,6 @@ decided on
 All: Remove all preprocessing related to dropping because of nulls, but keep the rest
 All_less cols: All dataset from above, but without the CDW fields that have a very high % of data missing
 
-# Import Libraries
-```{r message=FALSE, warning=FALSE}
-library(tidyverse)
-library(ggplot2)
-library(beepr)
-
-#Imputation
-library(mice)
-library(Amelia)
-library(Rcpp)
-library('fastDummies')
-library(missForest)
-library(miceRanger)
-```
 
 # Import Data
 
@@ -29,6 +15,22 @@ library(miceRanger)
 
 # load images
 load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
+```
+
+# Import Libraries
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(caret)
+library(ggplot2)
+library(beepr)
+
+#Imputation
+library(mice)
+library(Amelia)
+library(Rcpp)
+library('fastDummies')
+library(missForest)
+library(miceRanger)
 ```
 
 
@@ -216,13 +218,62 @@ This is the trainig data for the "long" model
 ## Train_Test Split for MICE
 ```{r}
 # All dataset
+# imputation but without the CDW columns with high missingness
+mf_train_less_cols_df <-  anti_join(tibble::rownames_to_column(miss_forest_imp_less_cols$ximp),tibble::rownames_to_column(mf_test_df),by=c("rowname" = "rowname"))
+# move key back to being the df rowname
+rownames(mf_train_less_cols_df) <- mf_train_less_cols_df$rowname
+mf_train_less_cols_df <- mf_train_less_cols_df %>% select(-rowname)
+
+```
 
 
+```{r}
+# train test split function for MICE
+train_test_split_mice <- function(test_df,imputation_object,i){
+    #move the kets to a columns, and remove the test set rows
+    output_df <-  anti_join(tibble::rownames_to_column(complete(imputation_object,i))
+                                        ,tibble::rownames_to_column(test_df)
+                                        ,by=c("rowname" = "rowname"))
+    # move key back to being the df rowname
+    rownames(output_df) <- output_df$rowname
+    output_df <- output_df %>% select(-rowname)
+    return(output_df)
+}
 ```
 
 ```{r}
-# All less CDW Dataset
+train_test_split_mice(mf_test_df,imputation_object = imp_less_cols,)
 ```
+
+
+```{r}
+# loop_and_name_mice <- function(test_df,imputation_object,i){
+#     
+# }
+
+loop_and_name_mice <- function(test_df,imputation_object){
+    output_list <- vector('list', 5)
+    for (i in c(1:5)) {
+    output_list[[i]] <- train_test_split_mice(test_df,imputation_object,i)
+    }
+    return(output_list)
+}
+```
+
+```{r}
+# full dataset
+imputed_df_list <- loop_and_name_mice(test_df = mf_test_df,imputation_object=imp)
+
+# less cols dataset
+imputed_df_less_cols_list <- loop_and_name_mice(test_df = mf_test_df,imputation_object = imp_less_cols)
+```
+
+```{r}
+# Combined dataframes
+
+
+```
+
 
 
 # Save
@@ -233,7 +284,7 @@ save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Pe
 
 # Extra code
 ## Amelia
-assumes varaibles follow multivariate normal distributions. Some transfaormations may be needed?
+assumes variables follow multivariate normal distributions. Some transfaormations may be needed?
 ```{r}
 # imput_data_dummy_var <- dummy_cols(to_be_imputed, select_columns = c('ProductSoldType', 'SmokerStatus', 'OccupationClassCode', 'DisabilityIncomeClass', 'AutoDeferredIndicator', 'NTUIndicator', 'LOAIndicator', 'ExclusionIndicator', 'AcceleratorIndicator', 'EducationID_Override', 'SumAssuredBand', 'ASS_ETHNIC_GROUP', 'PROVINCE', 'FARMER_IND', 'PROF_MARKET_IND', 'PUBLIC_SECTOR_IND', 'PUBLIC_SECTOR_TYPE', 'MARITAL_STATUS', 'GENDER'),
 #            remove_selected_columns = TRUE)
