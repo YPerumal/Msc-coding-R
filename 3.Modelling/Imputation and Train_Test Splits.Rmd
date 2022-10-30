@@ -242,17 +242,12 @@ train_test_split_mice <- function(test_df,imputation_object,i){
 ```
 
 ```{r}
-train_test_split_mice(mf_test_df,imputation_object = imp_less_cols,)
-```
-
-
-```{r}
 # loop_and_name_mice <- function(test_df,imputation_object,i){
 #     
 # }
 
 loop_and_name_mice <- function(test_df,imputation_object){
-    output_list <- vector('list', 5)
+    output_list <- list()
     for (i in c(1:5)) {
     output_list[[i]] <- train_test_split_mice(test_df,imputation_object,i)
     }
@@ -270,13 +265,26 @@ imputed_df_less_cols_list <- loop_and_name_mice(test_df = mf_test_df,imputation_
 
 ```{r}
 # Combined dataframes
+for (i in c(1:5)) {
+    if(i==1){
+        combine_imputed_all_df <- imputed_df_list[[i]]
+    }
+    else{
+        combine_imputed_all_df <- rbind(combine_imputed_all_df,imputed_df_list[[i]])
+    }
+}
 
+combine_imputed_all_df <- tibble::rownames_to_column(combine_imputed_all_df)
+```
 
+```{r}
+# group by for the combined dataset 
+
+combine_imputed_all_df %>% filter(rowname=='7e2bd1c3-5a24-4737-b174-cccabcaec20a') group_by(rowname) %>% summarise(mean(everything()))
 ```
 
 
-
-# Save
+%>% # Save
 ```{r}
 save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
 ```
