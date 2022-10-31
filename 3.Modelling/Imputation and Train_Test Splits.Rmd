@@ -102,8 +102,10 @@ beep()
 # 40 mins
 
 sapply(imp$data, function(x) sum(is.na(x)))
+```
 
 
+```{r}
 #works
 system.time(
 # imp <-  mice(to_be_imputed,seed = 42,m=2,maxit=2)
@@ -115,6 +117,7 @@ beep()
 sapply(imp$data, function(x) sum(is.na(x)))
 
 
+################################################ below currently doesn't work
 # system.time(
 # imp_mice_rf <-  mice(to_be_imputed,method='rf',seed = 42,m=2,maxit=5)
 # )
@@ -122,7 +125,6 @@ sapply(imp$data, function(x) sum(is.na(x)))
 #doesn't work; not sure why
 # Error in nodes_mis[, i] : incorrect number of dimensions
 
-################################################
 
 # taking only numeric works too
 # test <- imput_data %>% select_if(is.numeric)
@@ -208,25 +210,14 @@ mf_test_df wont match wide_test_df 100% because of the different preprocessing t
 ## Train-Test Split for Random MissFOrest "All Less CDW" Dataset
 ```{r}
 # imputation but without the CDW columns with high missingness
-mf_train_less_cols_df <-  anti_join(tibble::rownames_to_column(miss_forest_imp_less_cols$ximp),tibble::rownames_to_column(mf_test_df),by=c("rowname" = "rowname"))
+mf_train_less_cols_train_df <-  anti_join(tibble::rownames_to_column(miss_forest_imp_less_cols$ximp),tibble::rownames_to_column(mf_test_df),by=c("rowname" = "rowname"))
 # move key back to being the df rowname
-rownames(mf_train_less_cols_df) <- mf_train_less_cols_df$rowname
-mf_train_less_cols_df <- mf_train_less_cols_df %>% select(-rowname)
+rownames(mf_train_less_cols_train_df) <- mf_train_less_cols_train_df$rowname
+mf_train_less_cols_train_df <- mf_train_less_cols_train_df %>% select(-rowname)
 ```
 This is the trainig data for the "long" model
 
 ## Train_Test Split for MICE
-```{r}
-# All dataset
-# imputation but without the CDW columns with high missingness
-mf_train_less_cols_df <-  anti_join(tibble::rownames_to_column(miss_forest_imp_less_cols$ximp),tibble::rownames_to_column(mf_test_df),by=c("rowname" = "rowname"))
-# move key back to being the df rowname
-rownames(mf_train_less_cols_df) <- mf_train_less_cols_df$rowname
-mf_train_less_cols_df <- mf_train_less_cols_df %>% select(-rowname)
-
-```
-
-
 ```{r}
 # train test split function for MICE
 train_test_split_mice <- function(test_df,imputation_object,i){
@@ -242,10 +233,6 @@ train_test_split_mice <- function(test_df,imputation_object,i){
 ```
 
 ```{r}
-# loop_and_name_mice <- function(test_df,imputation_object,i){
-#     
-# }
-
 loop_and_name_mice <- function(test_df,imputation_object){
     output_list <- list()
     for (i in c(1:5)) {
@@ -259,6 +246,10 @@ loop_and_name_mice <- function(test_df,imputation_object){
 # full dataset
 imputed_df_list <- loop_and_name_mice(test_df = mf_test_df,imputation_object=imp)
 
+# sum(rownames(imputed_df_list[[1]])==rownames(imputed_df_list[[2]]))
+```
+
+```{r}
 # less cols dataset
 imputed_df_less_cols_list <- loop_and_name_mice(test_df = mf_test_df,imputation_object = imp_less_cols)
 ```
@@ -267,27 +258,58 @@ imputed_df_less_cols_list <- loop_and_name_mice(test_df = mf_test_df,imputation_
 # Combined dataframes
 for (i in c(1:5)) {
     if(i==1){
-        combine_imputed_all_df <- imputed_df_list[[i]]
+        combine_imputed_all_df <- tibble::rownames_to_column(imputed_df_list[[i]])
+        print(dim(combine_imputed_all_df))
     }
     else{
-        combine_imputed_all_df <- rbind(combine_imputed_all_df,imputed_df_list[[i]])
+        combine_imputed_all_df <- rbind(combine_imputed_all_df,tibble::rownames_to_column(imputed_df_list[[i]]))
+        print(dim(combine_imputed_all_df))
     }
 }
+```
 
-combine_imputed_all_df <- tibble::rownames_to_column(combine_imputed_all_df)
+
+```{r}
+combine_imputed_all_df %>% select(rowname) %>% unique() %>% count()
 ```
 
 ```{r}
 # group by for the combined dataset 
 
-combine_imputed_all_df %>% filter(rowname=='7e2bd1c3-5a24-4737-b174-cccabcaec20a') group_by(rowname) %>% summarise(mean(everything()))
+combine_imputed_all_df %>% filter(rowname=='7e2bd1c3-5a24-4737-b174-cccabcaec20a')
 ```
 
-
-%>% # Save
+# Save
 ```{r}
 save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Extra code
