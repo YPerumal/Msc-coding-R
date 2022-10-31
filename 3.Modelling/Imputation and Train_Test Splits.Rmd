@@ -266,6 +266,10 @@ for (i in c(1:5)) {
         print(dim(combine_imputed_all_df))
     }
 }
+
+# move key back to being the df rowname
+rownames(combine_imputed_all_df) <- combine_imputed_all_df$rowname
+combine_imputed_all_df <- combine_imputed_all_df %>% select(-rowname)
 ```
 
 
@@ -276,7 +280,26 @@ combine_imputed_all_df %>% select(rowname) %>% unique() %>% count()
 ```{r}
 # group by for the combined dataset 
 
-combine_imputed_all_df %>% filter(rowname=='7e2bd1c3-5a24-4737-b174-cccabcaec20a')
+
+# have the mean of all numeric columns, and the keys
+combine_imputed_all_df %>% 
+   group_by(rowname) %>%
+   summarise(across(where(is.numeric), mean))
+
+
+
+combine_imputed_all_df %>% 
+   group_by(rowname) %>%
+    select_if(negate(is.numeric)) %>% 
+    arrange(rowname) %>% 
+    head(5)
+
+# Pretty cool example of how the imputation provided the variation
+# combine_imputed_all_df %>% 
+#    group_by(rowname) %>%
+#     select_if(negate(is.numeric)) %>% 
+#     arrange(rowname) %>% 
+#     head(5)
 ```
 
 # Save
