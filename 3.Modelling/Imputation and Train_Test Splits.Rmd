@@ -302,6 +302,62 @@ combine_imputed_all_df %>%
 #     head(5)
 ```
 
+```{r}
+# test
+
+test <- combine_imputed_all_df %>% 
+   group_by(rowname) %>%
+    select_if(negate(is.numeric)) %>% 
+    arrange(rowname) %>% 
+    head(8)
+
+# Mode <- function(x) {
+#   ux <- unique(x)
+#   ux[which.max(tabulate(match(x, ux)))]
+# }
+# 
+# test %>% group_by(rowname) %>% summarise(c=across(as.factor,Mode()))
+
+
+
+
+test %>%
+group_by(rowname, PUBLIC_SECTOR_IND) %>%
+tally() %>%
+arrange(rowname, desc(n)) %>%
+summarize(freq = first(PUBLIC_SECTOR_IND))
+
+test %>%
+group_by(rowname, SmokerStatus) %>%
+tally() %>%
+arrange(rowname, desc(n)) %>%
+summarize(freq = first(SmokerStatus))
+
+
+i==1
+for (x in names(test)[-1]) {
+    tmp <- test[,c('rowname',x)]
+    output <- tmp %>%
+    group_by(rowname, paste0(x)) %>%
+    tally() %>%
+    arrange(rowname, desc(n)) %>%
+    summarize(freq = first(x))
+    print(output)
+}
+```
+
+```{r}
+
+#loop through and create a new unique data string for each ID/rowname?
+combine_imputed_all_df %>% 
+    select_if(negate(is.numeric)) %>% 
+    arrange(rowname) %>% 
+    head(5) %>%  
+  count(rowname, PUBLIC_SECTOR_IND) %>%
+  slice(which.max(n)) %>% 
+    select(2)
+```
+
 # Save
 ```{r}
 save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
