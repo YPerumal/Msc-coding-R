@@ -277,6 +277,7 @@ combine_imputed_all_df <- combine_imputed_all_df %>% select(-rowname)
 combine_imputed_all_df %>% select(rowname) %>% unique() %>% count()
 ```
 
+## Group the multiple datasets into one
 ```{r}
 # group by for the combined dataset 
 
@@ -285,14 +286,6 @@ combine_imputed_all_df %>% select(rowname) %>% unique() %>% count()
 combine_imputed_all_df %>% 
    group_by(rowname) %>%
    summarise(across(where(is.numeric), mean))
-
-
-
-combine_imputed_all_df %>% 
-   group_by(rowname) %>%
-    select_if(negate(is.numeric)) %>% 
-    arrange(rowname) %>% 
-    head(5)
 
 # Pretty cool example of how the imputation provided the variation
 # combine_imputed_all_df %>% 
@@ -303,47 +296,51 @@ combine_imputed_all_df %>%
 ```
 
 ```{r}
-# test
-
-test <- combine_imputed_all_df %>% 
+# get only factor cols
+tmp_factors <- combine_imputed_all_df %>% 
    group_by(rowname) %>%
     select_if(negate(is.numeric)) %>% 
     arrange(rowname) %>% 
-    head(8)
+    head(10)
 
-# Mode <- function(x) {
-#   ux <- unique(x)
-#   ux[which.max(tabulate(match(x, ux)))]
-# }
-# 
-# test %>% group_by(rowname) %>% summarise(c=across(as.factor,Mode()))
-
-
-
-
-test %>%
-group_by(rowname, PUBLIC_SECTOR_IND) %>%
-tally() %>%
-arrange(rowname, desc(n)) %>%
-summarize(freq = first(PUBLIC_SECTOR_IND))
-
-test %>%
-group_by(rowname, SmokerStatus) %>%
-tally() %>%
-arrange(rowname, desc(n)) %>%
-summarize(freq = first(SmokerStatus))
-
-
-i==1
-for (x in names(test)[-1]) {
-    tmp <- test[,c('rowname',x)]
-    output <- tmp %>%
-    group_by(rowname, paste0(x)) %>%
+i=1
+for (x in names(tmp_factors)[-1]) {
+    if(i==1){
+    output_df <- tmp_factors %>%
+    group_by(rowname,(!!sym(x))) %>%
     tally() %>%
     arrange(rowname, desc(n)) %>%
-    summarize(freq = first(x))
-    print(output)
+    summarize(freq = first((!!sym(x))))
+    i=i+1
+    }
+    else{
+        tmp <- tmp_factors %>%
+        group_by(rowname,(!!sym(x))) %>%
+        tally() %>%
+        arrange(rowname, desc(n)) %>%
+        summarize(freq = first((!!sym(x))))
+        output_df <- rbind(output_df,tmp)
+    }
+
 }
+
+ output_df
+for (x in names(tmp_factors)[-1]) {
+    print(
+    !!x
+    )
+}
+
+# col_list <- c('SmokerStatus','OccupationClassCode','DisabilityIncomeClass', 'AutoDeferredIndicator',
+#   'LOAIndicator','ExclusionIndicator','AcceleratorIndicator', 'EducationID_Override', 'ASS_ETHNIC_GROUP',     
+# 'PROVINCE','FARMER_IND','PROF_MARKET_IND','PUBLIC_SECTOR_IND','GENDER')
+
+
+# test %>%
+# group_by(rowname, PUBLIC_SECTOR_IND) %>%
+# tally() %>%
+# arrange(rowname, desc(n)) %>%
+# summarize(freq = first(PUBLIC_SECTOR_IND))
 ```
 
 ```{r}
