@@ -22,7 +22,7 @@ library(missForest)
 # load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
 
 # Current saved workspace
-load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
 ```
 
 # Basic Baseline

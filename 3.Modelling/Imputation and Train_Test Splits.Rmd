@@ -255,7 +255,7 @@ imputed_df_less_cols_list <- loop_and_name_mice(test_df = mf_test_df,imputation_
 ```
 
 ```{r}
-# Combined dataframes
+# Combined dataframes for dataset with all cols
 for (i in c(1:5)) {
     if(i==1){
         combine_imputed_all_df <- tibble::rownames_to_column(imputed_df_list[[i]])
@@ -268,22 +268,33 @@ for (i in c(1:5)) {
 }
 
 # move key back to being the df rowname
-rownames(combine_imputed_all_df) <- combine_imputed_all_df$rowname
-combine_imputed_all_df <- combine_imputed_all_df %>% select(-rowname)
+# rownames(combine_imputed_all_df) <- combine_imputed_all_df$rowname
+# combine_imputed_all_df <- combine_imputed_all_df %>% select(-rowname)
 ```
 
 
 ```{r}
-combine_imputed_all_df %>% select(rowname) %>% unique() %>% count()
+# Combined dataframes for dataset with less cols
+for (i in c(1:5)) {
+    if(i==1){
+        combine_imputed_all_df_less_cols <- tibble::rownames_to_column(imputed_df_less_cols_list[[i]])
+        print(dim(combine_imputed_all_df_less_cols))
+    }
+    else{
+        combine_imputed_all_df_less_cols <- rbind(combine_imputed_all_df_less_cols,tibble::rownames_to_column(imputed_df_less_cols_list[[i]]))
+        print(dim(combine_imputed_all_df_less_cols))
+    }
+}
+
+# move key back to being the df rowname
+# rownames(combine_imputed_all_df_less_cols) <- combine_imputed_all_df_less_cols$rowname
+# combine_imputed_all_df_less_cols <- combine_imputed_all_df_less_cols %>% select(-rowname)
 ```
 
 ## Group the multiple datasets into one
 ```{r}
-# group by for the combined dataset 
-
-
 # have the mean of all numeric columns, and the keys
-combine_imputed_all_df %>% 
+num_cols_group_temp <-  combine_imputed_all_df %>% 
    group_by(rowname) %>%
    summarise(across(where(is.numeric), mean))
 
@@ -293,67 +304,56 @@ combine_imputed_all_df %>%
 #     select_if(negate(is.numeric)) %>% 
 #     arrange(rowname) %>% 
 #     head(5)
-```
 
-```{r}
+
 # get only factor cols
 tmp_factors <- combine_imputed_all_df %>% 
    group_by(rowname) %>%
     select_if(negate(is.numeric)) %>% 
-    arrange(rowname) %>% 
-    head(10)
+    arrange(rowname)
 
-i=1
-for (x in names(tmp_factors)[-1]) {
-    if(i==1){
-    output_df <- tmp_factors %>%
-    group_by(rowname,(!!sym(x))) %>%
-    tally() %>%
-    arrange(rowname, desc(n)) %>%
-    summarize(freq = first((!!sym(x))))
-    i=i+1
-    }
-    else{
-        tmp <- tmp_factors %>%
-        group_by(rowname,(!!sym(x))) %>%
-        tally() %>%
-        arrange(rowname, desc(n)) %>%
-        summarize(freq = first((!!sym(x))))
-        output_df <- rbind(output_df,tmp)
-    }
-
+fn <- function(x){
+    names(sort(table(x), decreasing = T))[1]
 }
 
- output_df
-for (x in names(tmp_factors)[-1]) {
-    print(
-    !!x
-    )
-}
-
-# col_list <- c('SmokerStatus','OccupationClassCode','DisabilityIncomeClass', 'AutoDeferredIndicator',
-#   'LOAIndicator','ExclusionIndicator','AcceleratorIndicator', 'EducationID_Override', 'ASS_ETHNIC_GROUP',     
-# 'PROVINCE','FARMER_IND','PROF_MARKET_IND','PUBLIC_SECTOR_IND','GENDER')
+factor_cols_group_temp <-  tmp_factors %>% group_by(rowname) %>% summarise(across(where(is.factor), fn))
 
 
-# test %>%
-# group_by(rowname, PUBLIC_SECTOR_IND) %>%
-# tally() %>%
-# arrange(rowname, desc(n)) %>%
-# summarize(freq = first(PUBLIC_SECTOR_IND))
+# Join the factor and numeric grouped by datasets back into one
+grouped_imputed_df <- num_cols_group_temp %>% left_join(factor_cols_group_temp,by=c('rowname'))
 ```
 
 ```{r}
+# have the mean of all numeric columns, and the keys
+num_cols_group_temp1 <-  combine_imputed_all_df_less_cols %>% 
+   group_by(rowname) %>%
+   summarise(across(where(is.numeric), mean))
 
-#loop through and create a new unique data string for each ID/rowname?
-combine_imputed_all_df %>% 
+# Pretty cool example of how the imputation provided the variation
+# combine_imputed_all_df %>% 
+#    group_by(rowname) %>%
+#     select_if(negate(is.numeric)) %>% 
+#     arrange(rowname) %>% 
+#     head(5)
+
+
+# get only factor cols
+tmp_factors1 <- combine_imputed_all_df_less_cols %>% 
+   group_by(rowname) %>%
     select_if(negate(is.numeric)) %>% 
-    arrange(rowname) %>% 
-    head(5) %>%  
-  count(rowname, PUBLIC_SECTOR_IND) %>%
-  slice(which.max(n)) %>% 
-    select(2)
+    arrange(rowname)
+
+fn <- function(x){
+    names(sort(table(x), decreasing = T))[1]
+}
+
+factor_cols_group_temp1 <-  tmp_factors %>% group_by(rowname) %>% summarise(across(where(is.factor), fn))
+
+
+# Join the factor and numeric grouped by datasets back into one
+grouped_imputed_less_cols_df <- num_cols_group_temp %>% left_join(factor_cols_group_temp,by=c('rowname'))
 ```
+
 
 # Save
 ```{r}
@@ -361,6 +361,18 @@ save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Pe
 ```
 
 
+```{r}
+# Output the dataframes for modelling
+save(wide_train_df,
+     wide_test_df,
+     mf_train_df,
+     mf_train_less_cols_df,
+     grouped_imputed_df,
+     grouped_imputed_less_cols_df,
+     imputed_df_list,
+     imputed_df_less_cols_list
+     ,file = "C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
+```
 
 
 
@@ -389,6 +401,39 @@ save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Pe
 
 
 # Extra code
+
+```{r}
+## First Attempt
+# tmp_factors %>%
+# group_by(rowname, PUBLIC_SECTOR_IND) %>%
+# tally() %>%
+# arrange(rowname, desc(n)) %>%
+# summarize(freq = first(PUBLIC_SECTOR_IND))
+```
+
+
+```{r}
+# Code Stefan helped me with 
+
+# dum %>% group_by(name) %>% summarise(across(where(is.numeric), mean))
+# 
+# fn <- function(x){
+#     names(sort(table(x), decreasing = T))[1]
+# }
+# 
+# dumm %>% group_by(name) %>% summarise(across(where(is.factor), fn))
+```
+
+
+
+
+
+
+
+
+
+
+
 ## Amelia
 assumes variables follow multivariate normal distributions. Some transfaormations may be needed?
 ```{r}
