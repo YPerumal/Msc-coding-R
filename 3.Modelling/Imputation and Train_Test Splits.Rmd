@@ -321,6 +321,9 @@ factor_cols_group_temp <-  tmp_factors %>% group_by(rowname) %>% summarise(acros
 
 # Join the factor and numeric grouped by datasets back into one
 grouped_imputed_df <- num_cols_group_temp %>% left_join(factor_cols_group_temp,by=c('rowname'))
+# move key back to being the df rowname
+rownames(grouped_imputed_df) <- grouped_imputed_df$rowname
+grouped_imputed_df <- grouped_imputed_df %>% select(-rowname)
 ```
 
 ```{r}
@@ -347,11 +350,15 @@ fn <- function(x){
     names(sort(table(x), decreasing = T))[1]
 }
 
-factor_cols_group_temp1 <-  tmp_factors %>% group_by(rowname) %>% summarise(across(where(is.factor), fn))
+factor_cols_group_temp1 <-  tmp_factors1 %>% group_by(rowname) %>% summarise(across(where(is.factor), fn))
 
 
 # Join the factor and numeric grouped by datasets back into one
-grouped_imputed_less_cols_df <- num_cols_group_temp %>% left_join(factor_cols_group_temp,by=c('rowname'))
+grouped_imputed_less_cols_df <- num_cols_group_temp1 %>% left_join(factor_cols_group_temp1,by=c('rowname'))
+
+# move key back to being the df rowname
+rownames(grouped_imputed_less_cols_df) <- grouped_imputed_less_cols_df$rowname
+grouped_imputed_less_cols_df <- grouped_imputed_less_cols_df %>% select(-rowname)
 ```
 
 
@@ -366,6 +373,7 @@ save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Pe
 save(wide_train_df,
      wide_test_df,
      mf_train_df,
+     mf_test_df,
      mf_train_less_cols_df,
      grouped_imputed_df,
      grouped_imputed_less_cols_df,
