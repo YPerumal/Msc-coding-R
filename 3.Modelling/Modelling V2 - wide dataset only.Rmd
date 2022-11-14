@@ -107,12 +107,18 @@ mice_grouped_less_cols_test_rmse
 
 loop over multiple mice imputed datasets with all columns
 ```{r}
-
+results_list_all_cols <- list( )
+for (i in c(1:5)) {
+    results_list_all_cols[i] <- random_forest_func(data.frame(imputed_df_list[[i]]) %>%  slice_sample(n=1000),mf_test_df)
+}
 ```
 
 loop over multiple mice imputed datasets with less columns
 ```{r}
-
+results_list_less_cols <- list( )
+for (i in c(1:5)) {
+    results_list_all_cols[i] <- random_forest_func(data.frame(imputed_df_list[[i]]) %>%  slice_sample(n=1000),mf_test_df)
+}
 ```
 
 
