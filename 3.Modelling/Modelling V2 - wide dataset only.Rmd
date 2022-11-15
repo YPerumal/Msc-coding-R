@@ -34,7 +34,7 @@ std.dev <- sqrt(var(wide_train_df$GammaGTValue))
 ```{r}
 # Random forest
 
-random_forest_func <- function(train_data,test_data){
+random_forest_train_func <- function(train_data,test_data){
     # Set train control for cross-val
     rf_ctrl <- trainControl(method = 'cv',
                             number = 5,
@@ -67,19 +67,25 @@ random_forest_func <- function(train_data,test_data){
     #                             mtry=mtry,
     #                             splitrule=splitrule,
     #                             min.node.size=min.node.size)
+
     
+    return(rf_gridsearch)
+}
+
+
+random_forest_test_func <- function(model,test_data){
     #Predictions
-    rf_grid_pred <- predict(rf_gridsearch, newdata = test_data)
-    rf_rmse <-  sqrt(mean((test_data$GammaGTValue- rf_grid_pred)^2))
+    y_pred <- predict(model, newdata = test_data)
+    rmse <-  sqrt(mean((test_data$GammaGTValue- y_pred)^2))
     
-    return(rf_rmse)
+    return(list(y_pred,rmse))
 }
 ```
 
 wide dataset
 ```{r}
-rf_wide_test_rmse<- random_forest_func(wide_train_df %>% slice_sample(n=1000),mf_test_df)
-rf_wide_test_rmse
+rf_wide_test_model<- random_forest_train_func(wide_train_df %>% slice_sample(n=1000))
+rf_wide_test_model_result <- random_forest_test_func(rf_wide_test_model,mf_test_df)
 ```
 
 miss forest dataset all
@@ -107,10 +113,25 @@ mice_grouped_less_cols_test_rmse
 
 loop over multiple mice imputed datasets with all columns
 ```{r}
+
+
 results_list_all_cols <- list( )
 for (i in c(1:5)) {
-    results_list_all_cols[i] <- random_forest_func(data.frame(imputed_df_list[[i]]) %>%  slice_sample(n=1000),mf_test_df)
+    # train the model
+    temp_model <- random_forest_train_func(data.frame(imputed_df_list[[i]]) %>%  slice_sample(n=1000))
+    # make prediction on test set and store y_pred vector
+    
+    results_list_all_cols[i] <- random_forest_test_func(temp_model,mf_test_df)[1]
 }
+
+res_df <- data.frame(cbind(results_list_all_cols[[1]],results_list_all_cols[[2]],results_list_all_cols[[3]],
+                results_list_all_cols[[4]],results_list_all_cols[[5]]))
+
+# calculate the average of all predictions across the 5 models.
+res_df <- res_df %>% mutate(mean_pred=rowMeans(across()))
+
+# calculate rmse on the averaged vector
+sqrt(mean((mf_test_df$GammaGTValue- res_df[,'mean_pred'])^2))
 ```
 
 loop over multiple mice imputed datasets with less columns
