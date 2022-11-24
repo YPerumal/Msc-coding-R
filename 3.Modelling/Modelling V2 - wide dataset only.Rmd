@@ -71,9 +71,11 @@ random_forest_train_func <- function(train_data,test_data){
     
     return(rf_gridsearch)
 }
+```
 
 
-random_forest_test_func <- function(model,test_data){
+```{r}
+test_func <- function(model,test_data){
     #Predictions
     y_pred <- predict(model, newdata = test_data)
     rmse <-  sqrt(mean((test_data$GammaGTValue- y_pred)^2))
@@ -85,23 +87,23 @@ random_forest_test_func <- function(model,test_data){
 wide dataset
 ```{r}
 rf_wide_test_model<- random_forest_train_func(wide_train_df %>% slice_sample(n=1000))
-rf_wide_test_model_result <- random_forest_test_func(rf_wide_test_model,mf_test_df)
+rf_wide_test_model_result <- test_func(rf_wide_test_model,mf_test_df)
 ```
 
 miss forest dataset all
 ```{r}
 rf_mf_all_test_rmse <- random_forest_func(mf_train_df  %>% slice_sample(n=1000),mf_test_df)
-rf_mf_all_test_rmse
+rf_mf_all_model_result <- test_func(rf_mf_all_test_rmse,mf_test_df)
 ```
 miss forest with fewer columns
 ```{r}
 rf_mf_less_cols_test_rmse <- random_forest_func(mf_train_less_cols_df %>% slice_sample(n=1000),mf_test_df)
-rf_mf_less_cols_test_rmse
+
 ```
 MICE imputed all columns
 ```{r}
 mice_grouped_test_rmse <- random_forest_func(grouped_imputed_df%>% slice_sample(n=1000),mf_test_df)
-mice_grouped_test_rmse
+
 ```
 
 MICE imputed fewer columns
@@ -110,37 +112,45 @@ mice_grouped_less_cols_test_rmse <- random_forest_func(grouped_imputed_less_cols
 mice_grouped_less_cols_test_rmse
 ```
 
-
-loop over multiple mice imputed datasets with all columns
+#NEED TO REMOVETHE SAMPLE SLICE
 ```{r}
-
-
-results_list_all_cols <- list( )
-for (i in c(1:5)) {
-    # train the model
-    temp_model <- random_forest_train_func(data.frame(imputed_df_list[[i]]) %>%  slice_sample(n=1000))
-    # make prediction on test set and store y_pred vector
+#function that takes in list of dataframes and trains a model on each one.stores the y_test vector
+loop_func_random_forest <- function(list_of_dfs,test_df){
+    # List to store result vectors
+    results_list <- list()
+        # set up the loop of the list of dataframes
+        for (i in c(1:length(list_of_dfs))) {
+        # train the model
+        temp_model <- random_forest_train_func(data.frame(list_of_dfs[[i]]) %>%  slice_sample(n=100))
+        # make prediction on test set and store y_pred vector
+        results_list[i] <- random_forest_test_func(temp_model,mf_test_df)[1]
+        }
+    # put together all result vectors in dataframe
+    res_df <- data.frame(cbind(results_list[[1]],results_list[[2]],results_list[[3]],
+            results_list[[4]],results_list[[5]]))
     
-    results_list_all_cols[i] <- random_forest_test_func(temp_model,mf_test_df)[1]
+    # calculate the average of all predictions across the 5 models.
+    res_df <- res_df %>% mutate(mean_pred=rowMeans(across()))
+    
+    # calculate rmse on the averaged vector
+    mean_sqrt <- sqrt(mean((test_df$GammaGTValue- res_df[,'mean_pred'])^2))
+    
+    return(list(res_df,mean_sqrt))
+    
 }
-
-res_df <- data.frame(cbind(results_list_all_cols[[1]],results_list_all_cols[[2]],results_list_all_cols[[3]],
-                results_list_all_cols[[4]],results_list_all_cols[[5]]))
-
-# calculate the average of all predictions across the 5 models.
-res_df <- res_df %>% mutate(mean_pred=rowMeans(across()))
-
-# calculate rmse on the averaged vector
-sqrt(mean((mf_test_df$GammaGTValue- res_df[,'mean_pred'])^2))
 ```
 
-loop over multiple mice imputed datasets with less columns
 ```{r}
-results_list_less_cols <- list( )
-for (i in c(1:5)) {
-    results_list_all_cols[i] <- random_forest_func(data.frame(imputed_df_list[[i]]) %>%  slice_sample(n=1000),mf_test_df)
-}
+#loop all cols df
+loop_func_random_forest(imputed_df_list,mf_test_df)
 ```
+
+
+```{r}
+#loop less cols df
+loop_func_random_forest(imputed_df_less_cols_list,mf_test_df)
+```
+
 
 
 
@@ -178,20 +188,26 @@ xgb_func <- function(train_data,test_data){
                      trControl = ctrl,
                      verbose = F,
                      tuneGrid = xgb_grid)
+    # 
+    # #Predictions
+    # xgb_pred <- predict(xgb_final, test_data)
+    # xgb_rmse <- sqrt(mean((test_data$GammaGTValue - xgb_pred)^2)) 
     
-    #Predictions
-    xgb_pred <- predict(xgb_final, test_data)
-    xgb_rmse <- sqrt(mean((test_data$GammaGTValue - xgb_pred)^2)) 
-    
-    return(xgb_rmse)
+    return(xgb_final)
 }
-
 
 ```
 
 ```{r}
+
+```
+
+
+```{r}
 xgb_wide_test_rmse<- xgb_func(wide_train_df,mf_test_df)
 xgb_wide_test_rmse
+
+test_func(xgb_wide_test_rmse,mf_test_df)
 ```
 
 
@@ -204,6 +220,42 @@ xgb_mf_all_test_rmse
 xgb_mf_less_cols_test_rmse <- xgb_func(mf_train_less_cols_df,mf_test_df)
 xgb_mf_less_cols_test_rmse
 ```
+
+
+#NEED TO REMOVETHE SAMPLE SLICE
+```{r}
+#function that takes in list of dataframes and trains a model on each one.stores the y_test vector
+loop_func_xgb <- function(list_of_dfs,test_df){
+    # List to store result vectors
+    results_list <- list()
+        # set up the loop of the list of dataframes
+        for (i in c(1:length(list_of_dfs))) {
+        # train the model
+        temp_model <- xgb_func(data.frame(list_of_dfs[[i]]) %>%  slice_sample(n=100))
+        # make prediction on test set and store y_pred vector
+        results_list[i] <- random_forest_test_func(temp_model,mf_test_df)[1]
+        }
+    # put together all result vectors in dataframe
+    res_df <- data.frame(cbind(results_list[[1]],results_list[[2]],results_list[[3]],
+            results_list[[4]],results_list[[5]]))
+    
+    # calculate the average of all predictions across the 5 models.
+    res_df <- res_df %>% mutate(mean_pred=rowMeans(across()))
+    
+    # calculate rmse on the averaged vector
+    mean_sqrt <- sqrt(mean((test_df$GammaGTValue- res_df[,'mean_pred'])^2))
+    
+    return(list(res_df,mean_sqrt))
+    
+}
+```
+
+
+```{r}
+loop_func_xgb(imputed_df_list,mf_test_df)
+```
+
+
 ```{r}
 save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
 ```
@@ -216,7 +268,7 @@ save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Pe
 
 ## Decision Tree
 
--- Gonna can this for the moment
+-Gonna can this for the moment
 
 Used Rpart and Caret
 ```{r}
@@ -250,7 +302,6 @@ Used Rpart and Caret
 # dt_grid_pred <- predict(dt_gridsearch, newdata = test_df)
 # dt_rmse_long <-  sqrt(mean((test_df$GammaGTValue- dt_grid_pred)^2))
 ```
-
 
 Using the Trees Library
 ```{r}
