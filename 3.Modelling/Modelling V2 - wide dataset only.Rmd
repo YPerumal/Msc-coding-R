@@ -34,7 +34,7 @@ std.dev <- sqrt(var(wide_train_df$GammaGTValue))
 ```{r}
 # Random forest
 
-random_forest_train_func <- function(train_data,test_data){
+random_forest_train_func <- function(train_data){
     # Set train control for cross-val
     rf_ctrl <- trainControl(method = 'cv',
                             number = 5,
@@ -86,30 +86,32 @@ test_func <- function(model,test_data){
 
 wide dataset
 ```{r}
-rf_wide_test_model<- random_forest_train_func(wide_train_df %>% slice_sample(n=1000))
-rf_wide_test_model_result <- test_func(rf_wide_test_model,mf_test_df)
+rf_wide_model<- random_forest_train_func(wide_train_df %>% slice_sample(n=1000))
+rf_wide_model_result <- test_func(rf_wide_model,mf_test_df)
 ```
 
 miss forest dataset all
 ```{r}
-rf_mf_all_test_rmse <- random_forest_func(mf_train_df  %>% slice_sample(n=1000),mf_test_df)
-rf_mf_all_model_result <- test_func(rf_mf_all_test_rmse,mf_test_df)
+rf_mf_all_model <- random_forest_train_func(mf_train_df  %>% slice_sample(n=1000))
+rf_mf_all_model_result <- test_func(rf_mf_all_model,mf_test_df)
 ```
+
 miss forest with fewer columns
 ```{r}
-rf_mf_less_cols_test_rmse <- random_forest_func(mf_train_less_cols_df %>% slice_sample(n=1000),mf_test_df)
-
+rf_mf_less_cols_model <- random_forest_train_func(mf_train_less_cols_df %>% slice_sample(n=1000))
+rf_mf_less_cols_model_result <- test_func(rf_mf_less_cols_model,mf_test_df)
 ```
+
 MICE imputed all columns
 ```{r}
-mice_grouped_test_rmse <- random_forest_func(grouped_imputed_df%>% slice_sample(n=1000),mf_test_df)
-
+rf_mice_grouped_all_model <- random_forest_train_func(grouped_imputed_df%>% slice_sample(n=1000))
+rf_mice_grouped_all_model_result <- test_func(rf_mice_grouped_all_model,mf_test_df)
 ```
 
 MICE imputed fewer columns
 ```{r}
-mice_grouped_less_cols_test_rmse <- random_forest_func(grouped_imputed_less_cols_df%>% slice_sample(n=1000),mf_test_df)
-mice_grouped_less_cols_test_rmse
+rf_mice_grouped_less_cols_model <- random_forest_train_func(grouped_imputed_less_cols_df%>% slice_sample(n=1000))
+rf_mice_grouped_less_cols_model_result <- test_func(rf_mice_grouped_less_cols_model,mf_test_df)
 ```
 
 #NEED TO REMOVETHE SAMPLE SLICE
@@ -123,7 +125,7 @@ loop_func_random_forest <- function(list_of_dfs,test_df){
         # train the model
         temp_model <- random_forest_train_func(data.frame(list_of_dfs[[i]]) %>%  slice_sample(n=100))
         # make prediction on test set and store y_pred vector
-        results_list[i] <- random_forest_test_func(temp_model,mf_test_df)[1]
+        results_list[i] <- test_func(temp_model,mf_test_df)[1]
         }
     # put together all result vectors in dataframe
     res_df <- data.frame(cbind(results_list[[1]],results_list[[2]],results_list[[3]],
