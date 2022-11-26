@@ -61,8 +61,21 @@ md.pattern(to_be_imputed)
 ## Random MissForest
 ```{r}
 # all data imputatioan
-system.time(
+system.time({
     miss_forest_imp <- missForest(to_be_imputed, maxiter = 2,ntree = 5,mtry = 2)
+})
+beep()
+14
+
+# all data imputatioan
+system.time({
+    miss_forest_imp <- missForest(to_be_imputed,ntree = 5,mtry = 2)
+})
+beep()
+71
+
+system.time(
+    miss_forest_imp <- missForest(to_be_imputed)
 )
 beep()
 
