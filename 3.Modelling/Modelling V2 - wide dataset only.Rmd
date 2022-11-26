@@ -102,19 +102,19 @@ rf_mf_less_cols_model <- random_forest_train_func(mf_train_less_cols_df %>% slic
 rf_mf_less_cols_model_result <- test_func(rf_mf_less_cols_model,mf_test_df)
 ```
 
-MICE imputed all columns
+MICE imputed all columns agg dataset
 ```{r}
 rf_mice_grouped_all_model <- random_forest_train_func(grouped_imputed_df%>% slice_sample(n=1000))
 rf_mice_grouped_all_model_result <- test_func(rf_mice_grouped_all_model,mf_test_df)
 ```
 
-MICE imputed fewer columns
+MICE imputed fewer columns agg dataset
 ```{r}
 rf_mice_grouped_less_cols_model <- random_forest_train_func(grouped_imputed_less_cols_df%>% slice_sample(n=1000))
 rf_mice_grouped_less_cols_model_result <- test_func(rf_mice_grouped_less_cols_model,mf_test_df)
 ```
 
-#NEED TO REMOVETHE SAMPLE SLICE
+### NEED TO REMOVETHE SAMPLE SLICE
 ```{r}
 #function that takes in list of dataframes and trains a model on each one.stores the y_test vector
 loop_func_random_forest <- function(list_of_dfs,test_df){
@@ -142,12 +142,13 @@ loop_func_random_forest <- function(list_of_dfs,test_df){
 }
 ```
 
+loop over all cols datasets
 ```{r}
 #loop all cols df
 loop_func_random_forest(imputed_df_list,mf_test_df)
 ```
 
-
+loop over all cols datasets
 ```{r}
 #loop less cols df
 loop_func_random_forest(imputed_df_less_cols_list,mf_test_df)
@@ -160,7 +161,7 @@ loop_func_random_forest(imputed_df_less_cols_list,mf_test_df)
 ```{r}
 # XGboost model
 
-xgb_func <- function(train_data,test_data){
+xgb_train_func <- function(train_data,test_data){
     # train control for CV
     # ctrl <-  trainControl(method = 'cv', number = 5, verboseIter = T)
     # 
@@ -200,31 +201,39 @@ xgb_func <- function(train_data,test_data){
 
 ```
 
-```{r}
 
+wide dataset
+```{r}
+xgb_wide_model<- xgb_train_func(wide_train_df %>% slice_sample(n=1000))
+xgb_wide_model_result <- test_func(xgb_wide_model,mf_test_df)
+```
+
+miss forest dataset all
+```{r}
+xgb_mf_all_model <- xgb_train_func(mf_train_df  %>% slice_sample(n=1000))
+xgb_mf_all_model_result <- test_func(xgb_mf_all_model,mf_test_df)
+```
+
+miss forest with fewer columns
+```{r}
+xgb_mf_less_cols_model <- xgb_train_func(mf_train_less_cols_df %>% slice_sample(n=1000))
+xgb_mf_less_cols_model_result <- test_func(xgb_mf_less_cols_model,mf_test_df)
+```
+
+MICE imputed all columns agg dataset
+```{r}
+xgb_mice_grouped_all_model <- xgb_train_func(grouped_imputed_df%>% slice_sample(n=1000))
+xgb_mice_grouped_all_model_result <- test_func(xgb_mice_grouped_all_model,mf_test_df)
+```
+
+MICE imputed fewer columns agg dataset
+```{r}
+xgb_mice_grouped_less_cols_model <- xgb_train_func(grouped_imputed_less_cols_df%>% slice_sample(n=1000))
+xgb_mice_grouped_less_cols_model_result <- test_func(xgb_mice_grouped_less_cols_model,mf_test_df)
 ```
 
 
-```{r}
-xgb_wide_test_rmse<- xgb_func(wide_train_df,mf_test_df)
-xgb_wide_test_rmse
-
-test_func(xgb_wide_test_rmse,mf_test_df)
-```
-
-
-```{r}
-xgb_mf_all_test_rmse <- xgb_func(mf_train_df,mf_test_df)
-xgb_mf_all_test_rmse
-```
-
-```{r}
-xgb_mf_less_cols_test_rmse <- xgb_func(mf_train_less_cols_df,mf_test_df)
-xgb_mf_less_cols_test_rmse
-```
-
-
-#NEED TO REMOVETHE SAMPLE SLICE
+### NEED TO REMOVETHE SAMPLE SLICE
 ```{r}
 #function that takes in list of dataframes and trains a model on each one.stores the y_test vector
 loop_func_xgb <- function(list_of_dfs,test_df){
@@ -233,9 +242,9 @@ loop_func_xgb <- function(list_of_dfs,test_df){
         # set up the loop of the list of dataframes
         for (i in c(1:length(list_of_dfs))) {
         # train the model
-        temp_model <- xgb_func(data.frame(list_of_dfs[[i]]) %>%  slice_sample(n=100))
+        temp_model <- xgb_train_func(data.frame(list_of_dfs[[i]]) %>%  slice_sample(n=100))
         # make prediction on test set and store y_pred vector
-        results_list[i] <- random_forest_test_func(temp_model,mf_test_df)[1]
+        results_list[i] <- test_func(temp_model,mf_test_df)[1]
         }
     # put together all result vectors in dataframe
     res_df <- data.frame(cbind(results_list[[1]],results_list[[2]],results_list[[3]],
@@ -252,83 +261,15 @@ loop_func_xgb <- function(list_of_dfs,test_df){
 }
 ```
 
-
+loop over all cols datasets
 ```{r}
 loop_func_xgb(imputed_df_list,mf_test_df)
 ```
-
+loop over less cols datasets
+```{r}
+loop_func_xgb(imputed_df_less_cols_list,mf_test_df)
+```
 
 ```{r}
 save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
 ```
-
-
-
-
-
-# Extra Code
-
-## Decision Tree
-
--Gonna can this for the moment
-
-Used Rpart and Caret
-```{r}
-# Decision Trees
-# Set train control for cross-val
-# dt_ctrl <- trainControl(method = 'cv', number = 5, verboseIter = F)
-# 
-# #rpart
-# dt_grid <- expand.grid(cp = c(0.0001,0.001,0.01,0.05,0.1)) #Default for regression is 5. Controls tree size.
-# 
-# # # rpart2
-# # dt_grid <- expand.grid(maxdepth = c(5,10,20)
-# #                        ) #Default for regression is 5. Controls tree size.
-# 
-# set.seed(42)
-# dt_gridsearch <- train(GammaGTValue ~ .,
-#                        data = train_df,
-#                        method = 'rpart',
-#                        trControl = dt_ctrl
-#                        ,tuneGrid = dt_grid #Here is the grid
-#                        )
-# 
-# # dt_gridsearch$bestTune
-# # cp <- dt_gridsearch$bestTune[[1]]
-# 
-# # train a final model to get variable importance plot
-# # library(rpart)
-# # dt_final <-  rpart(GammaGTValue ~ ., data = train_df,cp=cp)
-# 
-# #Predictions
-# dt_grid_pred <- predict(dt_gridsearch, newdata = test_df)
-# dt_rmse_long <-  sqrt(mean((test_df$GammaGTValue- dt_grid_pred)^2))
-```
-
-Using the Trees Library
-```{r}
-# Decision Trees
-# set.seed(42)
-# 
-# tree_model <- tree(GammaGTValue ~ ., data=train_df)
-# summary(tree_model)
-# 
-# plot(tree_model)
-# text(tree_model, cex=0.8)
-# 
-# # cross validation
-# cv_tree <- cv.tree(tree_model)
-# plot(cv_tree$size, cv_tree$dev, type = 'b')
-# 
-# ## pruning
-# prune_tree <- prune.tree(tree_model, best = 2)
-# plot(prune_tree)
-# text(prune_tree, pretty=0, cex=0.8)
-# 
-# tree_yhat<- predict(tree_model, newdata=x_test)
-# tree_res <- data.frame(tree_yhat,y_test)
-# plot(tree_res$tree_yhat, tree_res$tree_yhat)
-# 
-# tree_rmse <- sqrt(mean((tree_yhat-y_test$GammaGTValue)^2))# MSE
-```
-
