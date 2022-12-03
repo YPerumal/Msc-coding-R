@@ -60,25 +60,59 @@ md.pattern(to_be_imputed)
  
 ## Random MissForest
 ```{r}
-# all data imputatioan
-system.time({
-    miss_forest_imp <- missForest(to_be_imputed, maxiter = 2,ntree = 5,mtry = 2)
-})
-beep()
-14
+# https://rpubs.com/lmorgan95/MissForest
 
-# all data imputatioan
+# # all data imputatioan
+# system.time({
+#     miss_forest_imp <- missForest(to_be_imputed, maxiter = 2,ntree = 5,mtry = 2)
+# })
+# beep()
+# # 14 mins
+# 
+# # all data imputatioan
+# system.time({
+#     miss_forest_imp <- missForest(to_be_imputed,ntree = 5,mtry = 2)
+# })
+# beep()
+# # 71 mins 
+# 
+# # all data imputatioan
+# system.time({
+#     miss_forest_imp <- missForest(to_be_imputed,mtry = 2)
+# })
+# beep()
+# #  left running for more than 6hrs, didnt finish
+
+library(doParallel)
+doParallel::registerDoParallel(cores = 3) # set based on number of CPU cores
+doRNG::registerDoRNG(seed = 123)
+
 system.time({
-    miss_forest_imp <- missForest(to_be_imputed,ntree = 5,mtry = 2)
+    miss_forest_imp <- missForest(to_be_imputed,ntree = 5,mtry = 2,parallelize = 'forests',verbose = TRUE)
 })
 beep()
-71
+# 48 mins
+
 
 system.time(
-    miss_forest_imp <- missForest(to_be_imputed)
+    miss_forest_imp <- missForest(to_be_imputed,ntree = 5,parallelize = 'forests',verbose = TRUE)
+)
+beep()
+# 129 mins
+
+
+system.time(
+    miss_forest_imp <- missForest(to_be_imputed,ntree = 10,parallelize = 'forests',verbose = TRUE)
 )
 beep()
 
+# 285 mins
+
+system.time(
+    miss_forest_imp <- missForest(to_be_imputed,ntree = 20,parallelize = 'forests',verbose = TRUE)
+)
+beep()
+# 690 mins
 
 # defutls
 # system.time({ miss_forest_imp <- missForest(to_be_imputed, maxiter = 10,ntree = 100,mtry = floor(sqrt(ncol(xmis))))})
