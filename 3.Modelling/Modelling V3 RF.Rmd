@@ -23,7 +23,7 @@ library(missForest)
 # load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
 
 # current state image
-load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_rf.Rdata")
 
 
 ```
@@ -145,7 +145,6 @@ loop_func_random_forest <- function(list_of_dfs,test_df){
         for (i in c(1:length(list_of_dfs))) {
         # train the model
         temp_model <- random_forest_train_func(data.frame(list_of_dfs[[i]]))
-        
         #store train rmse
         train_results_list[i] <- min(temp_model$results$RMSE)
         
@@ -175,8 +174,6 @@ system.time({
 looped_rf_mice_results_all<- loop_func_random_forest(imputed_df_list,mf_test_df)
 })
 # 158 mins
-
-looped_rf_mice_results_all[1]
 ```
 
 loop over all cols datasets
@@ -189,146 +186,6 @@ looped_rf_mice_results_less_cols <- loop_func_random_forest(imputed_df_less_cols
 ```
 
 
-# XGB using Caret
-```{r}
-# XGboost model
-
-xgb_train_func <- function(train_data,test_data){
-    # train control for CV
-    ctrl <-  trainControl(method = 'cv', number = 5, verboseIter = T)
-
-    xgb_grid <- expand.grid(nrounds = c(50,100,200),      #B - number of trees
-                            max_depth = c(8:12),      #d - interaction depth
-                            eta = c(0.1,0.01),       #lambda - learning rate
-                            gamma = 0.001,            #mindev
-                            colsample_bytree = 0.8,     #proportion random features per tree
-                            min_child_weight = 1,     #also controls tree depth
-                            subsample = 0.8             #bootstrap proportion
-    )
-    
-        # quick testtrain control for CV
-    # ctrl <-  trainControl(method = 'cv', number = 2, verboseIter = T)
-    # 
-    # xgb_grid <- expand.grid(nrounds = c(50),      #B - number of trees
-    #                         max_depth = c(8,10),      #d - interaction depth
-    #                         eta = c(0.1,0.01),       #lambda - learning rate
-    #                         gamma = 0.001,            #mindev
-    #                         colsample_bytree = 0.8,     #proportion random features per tree
-    #                         min_child_weight = 1,     #also controls tree depth
-    #                         subsample = 0.8             #bootstrap proportion
-    # )
-    
-    xgb_final <- train(GammaGTValue ~ ., data = train_data,
-                     method = 'xgbTree',
-                     trControl = ctrl,
-                     verbose = F,
-                     tuneGrid = xgb_grid)
-    # 
-    # #Predictions
-    # xgb_pred <- predict(xgb_final, test_data)
-    # xgb_rmse <- sqrt(mean((test_data$GammaGTValue - xgb_pred)^2)) 
-    
-    return(xgb_final)
-}
-
-```
-
-
-wide dataset
-```{r}
-system.time({
-xgb_wide_model<- xgb_train_func(wide_train_df )
-xgb_wide_model_result <- test_func(xgb_wide_model,mf_test_df)  
-})
-# 11 mins
-```
-
-miss forest dataset all
-```{r}
-system.time({
-xgb_mf_all_model <- xgb_train_func(mf_train_df  )
-xgb_mf_all_model_result <- test_func(xgb_mf_all_model,mf_test_df)   
-})
-# 13 mins
-```
-
-miss forest with fewer columns
-```{r}
-system.time({
-xgb_mf_less_cols_model <- xgb_train_func(mf_train_less_cols_df )
-xgb_mf_less_cols_model_result <- test_func(xgb_mf_less_cols_model,mf_test_df)   
-})
-# 13 mins
-```
-
-MICE imputed all columns agg dataset
-```{r}
-system.time({
-xgb_mice_grouped_all_model <- xgb_train_func(grouped_imputed_df)
-xgb_mice_grouped_all_model_result <- test_func(xgb_mice_grouped_all_model,mf_test_df)
-    
-})
-# 14 mins
-```
-
-MICE imputed fewer columns agg dataset
-```{r}
-system.time({
-xgb_mice_grouped_less_cols_model <- xgb_train_func(grouped_imputed_less_cols_df)
-xgb_mice_grouped_less_cols_model_result <- test_func(xgb_mice_grouped_less_cols_model,mf_test_df)
-    
-})
-# 13 mins
-```
-
-```{r}
-#function that takes in list of dataframes and trains a model on each one.stores the y_test vector
-loop_func_xgb <- function(list_of_dfs,test_df){
-    # List to store result vectors
-    train_results_list <- list()
-    test_results_list <- list()
-        # set up the loop of the list of dataframes
-        for (i in c(1:length(list_of_dfs))) {
-        # train the model
-        temp_model <- xgb_train_func(data.frame(list_of_dfs[[i]]))
-        
-        #store train rmse
-        train_results_list[i] <- min(temp_model$results$RMSE)
-        
-        # make prediction on test set and store y_pred vector
-        test_results_list[i] <- test_func(temp_model,mf_test_df)[1]
-        }
-    # put together all result vectors in dataframe
-    test_res_df <- data.frame(cbind(test_results_list[[1]],test_results_list[[2]],test_results_list[[3]],
-            test_results_list[[4]],test_results_list[[5]]))
-    
-    # calculate the average of all predictions across the 5 models.
-    test_res_df <- test_res_df %>% mutate(mean_pred=rowMeans(across()))
-    
-    # calculate rmse on the averaged vector
-    mean_sqrt <- sqrt(mean((test_df$GammaGTValue- test_res_df[,'mean_pred'])^2))
-    
-    return(list(test_res_df,mean_sqrt,train_results_list))
-    
-}
-```
-
-loop over all cols datasets
-```{r}
-system.time({
-looped_xgb_mice_results_all <- loop_func_xgb(imputed_df_list,mf_test_df)
-})
-# 67 mins
-```
-
-loop over less cols datasets
-```{r}
-system.time({
-looped_xgbmice_results_less_cols <- loop_func_xgb(imputed_df_less_cols_list,mf_test_df)
-})
-# 61 mins 
-```
-
 # Summary results RF
 ```{r}
 rf_wide_model_result[2]
@@ -337,21 +194,10 @@ rf_mf_less_cols_model_result[2]
 rf_mice_grouped_all_model_result[2]
 rf_mice_grouped_less_cols_model_result[2]
 ```
-# Summary XGB Results
-```{r}
-xgb_wide_model_result[2]
-xgb_mf_all_model_result[2]
-xgb_mf_less_cols_model_result[2]
-xgb_mice_grouped_all_model_result[2]
-xgb_mice_grouped_less_cols_model_result[2]
-```
-
-
-
 
 
 ```{r}
 # save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
-save.image(file="D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+save.image(file="D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_rf.Rdata")
 
 ```

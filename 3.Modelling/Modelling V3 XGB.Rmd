@@ -23,7 +23,7 @@ library(missForest)
 # load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
 
 # current state image
-load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_xgb.Rdata")
 
 
 ```
@@ -32,162 +32,6 @@ load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc -
 ```{r}
 std.dev <- sqrt(var(wide_train_df$GammaGTValue))
 ```
-
-# Random Forest Using Caret
-```{r}
-# Random forest
-
-random_forest_train_func <- function(train_data){
-    # Set train control for cross-val
-    rf_ctrl <- trainControl(method = 'cv',
-                            number = 5,
-                            verboseIter = F)
-    
-    # Set grid search for hyperparaneter search
-    rf_grid <- expand.grid(mtry = 10:20,
-                           splitrule = 'variance', #Have to specify. This is RSS for reg.
-                           min.node.size = c(5:10)) #Default for regression is 5. Controls tree size.
-    
-    # set.seed(42)
-    rf_gridsearch <- train(GammaGTValue ~ ., 
-                           data = train_data,
-                           method = 'ranger',
-                           num.trees = 100,
-                           verbose = T,
-                           trControl = rf_ctrl
-                           ,tuneGrid = rf_grid #Here is the grid
-                           ) 
-    
-    # rf_gridsearch$bestTune
-    # mtry <- rf_gridsearch$bestTune[[1]]
-    # splitrule <- rf_gridsearch$bestTune[[2]]
-    # min.node.size <- rf_gridsearch$bestTune[[3]]
-    
-    # train a final model to get variable importance plot
-    # rf_final <- randomForest(GammaGTValue ~ ., data = train_df,
-    #                            ntree = 10,
-    #                            importance = TRUE,
-    #                             mtry=mtry,
-    #                             splitrule=splitrule,
-    #                             min.node.size=min.node.size)
-
-    
-    return(rf_gridsearch)
-}
-```
-
-
-```{r}
-test_func <- function(model,test_data){
-    #Predictions
-    y_pred <- predict(model, newdata = test_data)
-    train_rmse <- min(model$results$RMSE)
-    test_rmse <-  sqrt(mean((test_data$GammaGTValue- y_pred)^2))
-    
-    return(list(y_pred,test_rmse,train_rmse))
-}
-```
-
-wide dataset
-```{r}
-system.time({
-rf_wide_model<- random_forest_train_func(wide_train_df)
-rf_wide_model_result <- test_func(rf_wide_model,mf_test_df)  
-})
-# 13 mins
-```
-
-miss forest dataset all
-```{r}
-system.time({
-rf_mf_all_model <- random_forest_train_func(mf_train_df)
-rf_mf_all_model_result <- test_func(rf_mf_all_model,mf_test_df)   
-})
-#32 mins
-```
-
-miss forest with fewer columns
-```{r}
-system.time({
-   rf_mf_less_cols_model <- random_forest_train_func(mf_train_less_cols_df )
-rf_mf_less_cols_model_result <- test_func(rf_mf_less_cols_model,mf_test_df) 
-})
-# 27 mins
-```
-
-MICE imputed all columns agg dataset
-```{r}
-system.time({
-rf_mice_grouped_all_model <- random_forest_train_func(grouped_imputed_df)
-rf_mice_grouped_all_model_result <- test_func(rf_mice_grouped_all_model,mf_test_df)
-})
-# 31 mins
-```
-
-MICE imputed fewer columns agg dataset
-```{r}
-system.time({
-rf_mice_grouped_less_cols_model <- random_forest_train_func(grouped_imputed_less_cols_df)
-rf_mice_grouped_less_cols_model_result <- test_func(rf_mice_grouped_less_cols_model,mf_test_df)
-})
-# 29 mins
-
-
-```
-
-```{r}
-#function that takes in list of dataframes and trains a model on each one.stores the y_test vector
-loop_func_random_forest <- function(list_of_dfs,test_df){
-    # List to store result vectors
-    train_results_list <- list()
-    test_results_list <- list()
-        # set up the loop of the list of dataframes
-        for (i in c(1:length(list_of_dfs))) {
-        # train the model
-        temp_model <- random_forest_train_func(data.frame(list_of_dfs[[i]]))
-        
-        #store train rmse
-        train_results_list[i] <- min(temp_model$results$RMSE)
-        
-        # make prediction on test set and store y_pred vector
-        test_results_list[i] <- test_func(temp_model,mf_test_df)[1]
-        }
-    
-    # put together all result vectors in dataframe
-    test_res_df <- data.frame(cbind(test_results_list[[1]],test_results_list[[2]],test_results_list[[3]],
-            test_results_list[[4]],test_results_list[[5]]))
-    
-    # calculate the average of all predictions across the 5 models.
-    test_res_df <- test_res_df %>% mutate(mean_pred=rowMeans(across()))
-    
-    # calculate rmse on the averaged vector
-    mean_sqrt <- sqrt(mean((test_df$GammaGTValue- test_res_df[,'mean_pred'])^2))
-    
-    return(list(test_res_df,mean_sqrt,train_results_list))
-    
-}
-```
-
-loop over all cols datasets
-```{r}
-#loop all cols df
-system.time({
-looped_rf_mice_results_all<- loop_func_random_forest(imputed_df_list,mf_test_df)
-})
-# 158 mins
-
-looped_rf_mice_results_all[1]
-```
-
-loop over all cols datasets
-```{r}
-#loop less cols df
-system.time({
-looped_rf_mice_results_less_cols <- loop_func_random_forest(imputed_df_less_cols_list,mf_test_df)
-})
-# 131 mins
-```
-
 
 # XGB using Caret
 ```{r}
@@ -352,6 +196,6 @@ xgb_mice_grouped_less_cols_model_result[2]
 
 ```{r}
 # save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
-save.image(file="D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
+save.image(file="D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_xgb.Rdata")
 
 ```

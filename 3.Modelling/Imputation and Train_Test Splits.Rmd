@@ -13,8 +13,11 @@ All_less cols: All dataset from above, but without the CDW fields that have a ve
 # Windows load tables saved as Rdata to preserve types from PreProcessing v2
 # load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_imputation.Rdata")
 
-# load images
-load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
+# load images local pc
+# load("C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
+
+# load images Workspace
+load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
 ```
 
 # Import Libraries
@@ -84,14 +87,15 @@ md.pattern(to_be_imputed)
 # #  left running for more than 6hrs, didnt finish
 
 library(doParallel)
-doParallel::registerDoParallel(cores = 3) # set based on number of CPU cores
+doParallel::registerDoParallel(cores = 8) # set based on number of CPU cores
 doRNG::registerDoRNG(seed = 123)
 
 system.time({
     miss_forest_imp <- missForest(to_be_imputed,ntree = 5,mtry = 2,parallelize = 'forests',verbose = TRUE)
 })
 beep()
-# 48 mins
+# 48 mins local
+# 25 mins workspace
 
 
 system.time(
@@ -114,6 +118,19 @@ system.time(
 beep()
 # 690 mins
 
+system.time(
+    miss_forest_imp <- missForest(to_be_imputed,ntree = 50,parallelize = 'forests',verbose = TRUE)
+)
+beep()
+# 593' mins
+
+# 100 is the default number of trees
+system.time(
+    miss_forest_imp <- missForest(to_be_imputed,ntree = 100,parallelize = 'forests',verbose = TRUE)
+)
+beep()
+# 1109  mins; 18.48 hrs.
+
 # defutls
 # system.time({ miss_forest_imp <- missForest(to_be_imputed, maxiter = 10,ntree = 100,mtry = floor(sqrt(ncol(xmis))))})
 
@@ -123,10 +140,16 @@ beep()
 
 ```{r}
 # "long" dataset imputation
+# system.time(
+#     miss_forest_imp_less_cols <- missForest(to_be_imputed_less_cols, maxiter = 2,ntree = 5,mtry = 2)
+# )
+# beep()
+
 system.time(
-    miss_forest_imp_less_cols <- missForest(to_be_imputed_less_cols, maxiter = 2,ntree = 5,mtry = 2)
+    miss_forest_imp_less_cols <- missForest(to_be_imputed_less_cols,ntree = 100,parallelize = 'forests',verbose = TRUE)
 )
 beep()
+# 584 mins; 9.75 hours
 ```
 Doing the exact same imputation stucture as the full set. i.e. testing if having more variables, even ones with lots of missingness, is able to confer an advatange to performance 
 
@@ -411,7 +434,12 @@ grouped_imputed_less_cols_df <- grouped_imputed_less_cols_df %>% select(-rowname
 
 # Save
 ```{r}
+# local
 save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
+# Worskspace
+save.image(file="D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
+
+
 ```
 
 
@@ -427,6 +455,20 @@ save(wide_train_df,
      imputed_df_list,
      imputed_df_less_cols_list
      ,file = "C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
+
+# workspace
+save(wide_train_df,
+     wide_test_df,
+     mf_train_df,
+     mf_test_df,
+     mf_train_less_cols_df,
+     grouped_imputed_df,
+     grouped_imputed_less_cols_df,
+     imputed_df_list,
+     imputed_df_less_cols_list
+     ,file = "D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
+
+
 ```
 
 
