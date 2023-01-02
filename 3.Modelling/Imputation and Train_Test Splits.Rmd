@@ -90,39 +90,39 @@ library(doParallel)
 doParallel::registerDoParallel(cores = 8) # set based on number of CPU cores
 doRNG::registerDoRNG(seed = 123)
 
-system.time({
-    miss_forest_imp <- missForest(to_be_imputed,ntree = 5,mtry = 2,parallelize = 'forests',verbose = TRUE)
-})
-beep()
-# 48 mins local
-# 25 mins workspace
-
-
-system.time(
-    miss_forest_imp <- missForest(to_be_imputed,ntree = 5,parallelize = 'forests',verbose = TRUE)
-)
-beep()
-# 129 mins
-
-
-system.time(
-    miss_forest_imp <- missForest(to_be_imputed,ntree = 10,parallelize = 'forests',verbose = TRUE)
-)
-beep()
-
-# 285 mins
-
-system.time(
-    miss_forest_imp <- missForest(to_be_imputed,ntree = 20,parallelize = 'forests',verbose = TRUE)
-)
-beep()
-# 690 mins
-
-system.time(
-    miss_forest_imp <- missForest(to_be_imputed,ntree = 50,parallelize = 'forests',verbose = TRUE)
-)
-beep()
-# 593' mins
+# system.time({
+#     miss_forest_imp <- missForest(to_be_imputed,ntree = 5,mtry = 2,parallelize = 'forests',verbose = TRUE)
+# })
+# beep()
+# # 48 mins local
+# # 25 mins workspace
+# 
+# 
+# system.time(
+#     miss_forest_imp <- missForest(to_be_imputed,ntree = 5,parallelize = 'forests',verbose = TRUE)
+# )
+# beep()
+# # 129 mins
+# 
+# 
+# system.time(
+#     miss_forest_imp <- missForest(to_be_imputed,ntree = 10,parallelize = 'forests',verbose = TRUE)
+# )
+# beep()
+# 
+# # 285 mins
+# 
+# system.time(
+#     miss_forest_imp <- missForest(to_be_imputed,ntree = 20,parallelize = 'forests',verbose = TRUE)
+# )
+# beep()
+# # 690 mins
+# 
+# system.time(
+#     miss_forest_imp <- missForest(to_be_imputed,ntree = 50,parallelize = 'forests',verbose = TRUE)
+# )
+# beep()
+# # 593' mins
 
 # 100 is the default number of trees
 system.time(

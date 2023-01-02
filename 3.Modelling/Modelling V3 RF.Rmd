@@ -1,3 +1,15 @@
+# Import datasets 
+```{r}
+# From the Imputation and Splits script
+# Current saved work space
+load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
+
+# current state image
+load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_rf.Rdata")
+
+
+```
+
 # Import Libraries
 ```{r message=FALSE, warning=FALSE}
 library(xgboost)
@@ -16,21 +28,10 @@ library('fastDummies')
 library(missForest)
 ```
 
-# Import datasets 
-```{r}
-# From the Imputation and Splits script
-# Current saved work space
-# load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
-
-# current state image
-load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_rf.Rdata")
-
-
-```
-
 # Basic Baseline
 ```{r}
-std.dev <- sqrt(var(wide_train_df$GammaGTValue))
+# std.dev <- sqrt(var(wide_train_df$GammaGTValue))
+std.dev <- sqrt(var(mf_test_df$GammaGTValue))
 ```
 
 # Random Forest Using Caret
@@ -42,11 +43,18 @@ random_forest_train_func <- function(train_data){
     rf_ctrl <- trainControl(method = 'cv',
                             number = 5,
                             verboseIter = F)
+    # Set train control for cross-val
+    # rf_ctrl <- trainControl(method = 'none')
     
-    # Set grid search for hyperparaneter search
-    rf_grid <- expand.grid(mtry = 10:20,
+    # # Set grid search for hyperparaneter search
+    # rf_grid <- expand.grid(mtry = c(10:40),
+    #                        splitrule = 'variance', #Have to specify. This is RSS for reg.
+    #                        min.node.size = c(5:20)) #Default for regression is 5. Controls tree size.
+    
+        # Set grid search for hyperparaneter search
+    rf_grid <- expand.grid(mtry = c(34,35,36),
                            splitrule = 'variance', #Have to specify. This is RSS for reg.
-                           min.node.size = c(5:10)) #Default for regression is 5. Controls tree size.
+                           min.node.size = c(2,3,4)) #Default for regression is 5. Controls tree size.
     
     # set.seed(42)
     rf_gridsearch <- train(GammaGTValue ~ ., 
@@ -54,8 +62,8 @@ random_forest_train_func <- function(train_data){
                            method = 'ranger',
                            num.trees = 100,
                            verbose = T,
-                           trControl = rf_ctrl
-                           ,tuneGrid = rf_grid #Here is the grid
+                           trControl = rf_ctrl,
+                           tuneGrid = rf_grid #Here is the grid
                            ) 
     
     # rf_gridsearch$bestTune
@@ -193,8 +201,11 @@ rf_mf_all_model_result[2]
 rf_mf_less_cols_model_result[2]
 rf_mice_grouped_all_model_result[2]
 rf_mice_grouped_less_cols_model_result[2]
+looped_rf_mice_results_all[2]
+looped_rf_mice_results_less_cols[2]
 ```
-
+Tries with 500 trees, didnt really make a difference compared to 100 trees. all ended up around 12
+plus took 16-18 hrs for looped runs. 
 
 ```{r}
 # save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")

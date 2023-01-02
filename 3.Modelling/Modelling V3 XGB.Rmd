@@ -1,3 +1,13 @@
+# Import datasets 
+```{r}
+# From the Imputation and Splits script
+# Current saved work space
+load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
+
+# current state image
+# load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_xgb.Rdata")
+```
+
 # Import Libraries
 ```{r message=FALSE, warning=FALSE}
 library(xgboost)
@@ -16,57 +26,37 @@ library('fastDummies')
 library(missForest)
 ```
 
-# Import datasets 
-```{r}
-# From the Imputation and Splits script
-# Current saved work space
-# load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
-
-# current state image
-load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_xgb.Rdata")
-
-
-```
-
 # Basic Baseline
 ```{r}
 std.dev <- sqrt(var(wide_train_df$GammaGTValue))
 ```
 
 # XGB using Caret
+commented out CV for now
 ```{r}
 # XGboost model
 
 xgb_train_func <- function(train_data,test_data){
     # train control for CV
-    ctrl <-  trainControl(method = 'cv', number = 5, verboseIter = T)
+    ctrl <-  trainControl(method = 'cv',
+                          number = 5, 
+                          verboseIter = T)
 
-    xgb_grid <- expand.grid(nrounds = c(50,100,200),      #B - number of trees
-                            max_depth = c(8:12),      #d - interaction depth
-                            eta = c(0.1,0.01),       #lambda - learning rate
-                            gamma = 0.001,            #mindev
-                            colsample_bytree = 0.8,     #proportion random features per tree
-                            min_child_weight = 1,     #also controls tree depth
-                            subsample = 0.8             #bootstrap proportion
-    )
-    
-        # quick testtrain control for CV
-    # ctrl <-  trainControl(method = 'cv', number = 2, verboseIter = T)
-    # 
-    # xgb_grid <- expand.grid(nrounds = c(50),      #B - number of trees
-    #                         max_depth = c(8,10),      #d - interaction depth
-    #                         eta = c(0.1,0.01),       #lambda - learning rate
-    #                         gamma = 0.001,            #mindev
-    #                         colsample_bytree = 0.8,     #proportion random features per tree
-    #                         min_child_weight = 1,     #also controls tree depth
-    #                         subsample = 0.8             #bootstrap proportion
-    # )
+    xgb_grid <- expand.grid(max_depth = c(6,12),      #d - interaction depth default 6
+                            nrounds = c(500),      #B - number of trees default
+                            eta = c(0.1),       #lambda - learning rate default 0.3
+                            gamma = c(0,0.01),          #min improv to split tree further default 0. 
+                            colsample_bytree = c(0.8),     #proportion random features per tree default 1
+                            min_child_weight = 1,     #also controls tree depth default 1
+                            subsample =c(0.8)   #bootstrap proportion default 1
+                            )
     
     xgb_final <- train(GammaGTValue ~ ., data = train_data,
                      method = 'xgbTree',
-                     trControl = ctrl,
+                     # trControl = ctrl,
                      verbose = F,
-                     tuneGrid = xgb_grid)
+                     tuneGrid = xgb_grid,
+                     verbosity = 0)
     # 
     # #Predictions
     # xgb_pred <- predict(xgb_final, test_data)
@@ -77,6 +67,17 @@ xgb_train_func <- function(train_data,test_data){
 
 ```
 
+```{r}
+test_func <- function(model,test_data){
+    #Predictions
+    y_pred <- predict(model, newdata = test_data)
+    train_rmse <- min(model$results$RMSE)
+    test_rmse <-  sqrt(mean((test_data$GammaGTValue- y_pred)^2))
+    
+    return(list(y_pred,test_rmse,train_rmse))
+}
+```
+
 
 wide dataset
 ```{r}
@@ -84,6 +85,7 @@ system.time({
 xgb_wide_model<- xgb_train_func(wide_train_df )
 xgb_wide_model_result <- test_func(xgb_wide_model,mf_test_df)  
 })
+beep()
 # 11 mins
 ```
 
@@ -173,14 +175,7 @@ looped_xgbmice_results_less_cols <- loop_func_xgb(imputed_df_less_cols_list,mf_t
 # 61 mins 
 ```
 
-# Summary results RF
-```{r}
-rf_wide_model_result[2]
-rf_mf_all_model_result[2]
-rf_mf_less_cols_model_result[2]
-rf_mice_grouped_all_model_result[2]
-rf_mice_grouped_less_cols_model_result[2]
-```
+
 # Summary XGB Results
 ```{r}
 xgb_wide_model_result[2]
@@ -188,14 +183,13 @@ xgb_mf_all_model_result[2]
 xgb_mf_less_cols_model_result[2]
 xgb_mice_grouped_all_model_result[2]
 xgb_mice_grouped_less_cols_model_result[2]
+looped_xgb_mice_results_all[2]
+looped_xgbmice_results_less_cols[2]
 ```
-
-
-
 
 
 ```{r}
 # save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
-save.image(file="D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_xgb.Rdata")
 
+save.image(file="D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_xgb.Rdata")
 ```
