@@ -24,7 +24,11 @@ library(ids)
 # df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
 
 # Windows
-df <- read.csv('C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+# df <- read.csv('C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+
+# AWS workspace
+df <- read.csv('D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+
 ```
 
 
@@ -44,11 +48,11 @@ df <- df %>% select(-unique_id)
 head(df)
 ```
 
-Lists Set up:
-## Columns to drop:
+
+## Lists Set up
 ```{r}
 # dropped columns from EDA
-cols_to_drop <- c(# Just didnt seem handy:
+cols_to_drop <- c(# Didnt seem useful on inspection:
                   'ProductCode',
                   'RecordID',
                   'DimGCSPartyKeyLifeCovered',
@@ -60,7 +64,6 @@ cols_to_drop <- c(# Just didnt seem handy:
                   'QuoteNumber' ,
                   # because of high correlation/target leakage/they're informed by GammaGT:
                   'LoadingPercentage','CoverLoadingAmount','HealthLoadingPercentage',
-                  # double check these are all for current app?could be previous:
                   'CoverLoading','HealthLoadingIndicator','CoverLoadingIndicator',
                   'UnderwritingOutcome','NoOfLoadingsApplied',
                   #customer identifier:
@@ -147,9 +150,6 @@ factor_cols <-  c(
          )   
 
 ```
-The columns above just looked useless from EDA and seeing what they are
-
-
 
 ## Drop columns and Conversions
 ```{r}
@@ -313,10 +313,14 @@ data_cleaning_factor_cols <- function(data){
 
 ## Create Wide and long datasets
 ```{r}
-df1 <- data_cleaning_drop_cols(df)
+df1 <- data_cleaning_drop_cols(df) # big drop off due to duplicate rows
+dim(df1)
 df2 <- data_cleaning_nulls(df1)
-df3 <- data_cleaning_num_outliers(df2) #quite a big drop off here
+dim(df2)
+df3 <- data_cleaning_num_outliers(df2) #quite a big drop off here; outliers
+dim(df3)
 df4 <- data_cleaning_factor_cols(df3)
+dim(df4)
 ```
 
 ```{r}
@@ -346,7 +350,7 @@ dim(df_wide)
 # df_long
 ```
 
-## Impuation dataset creation 
+## Imputation dataset creation 
 
 Null version of code
 ```{r}
@@ -419,7 +423,7 @@ to_be_imputed <- t4
 ```
 
 
-## Deal with highly correlated variables(should've done a corrplot in the EDA)
+## highly correlated variables
 ```{r}
 # library(caret)
 # df_corr = cor(data %>% select_if(is.numeric) %>% select(-AGE,-ALL_BEN_COUNT,-ALL_CONTRACT_COUNT,-ANNUAL_INVESTMENT,-AUM))
@@ -473,11 +477,6 @@ to_be_imputed_less_cols <- to_be_imputed %>%select(-AGE
                                                    ,-ALL_CONTRACT_COUNT
                                                    ,-ANNUAL_INVESTMENT
                                                    ,-AUM)
-
-
-# dim(df_long)
-# dim(df_wide)
-# dim(to_be_imputed)
 ```
 
 # Factor columns with way too many categories
@@ -496,5 +495,121 @@ save(df_wide
      ,to_be_imputed
      ,to_be_imputed_less_cols
      ,file = "C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_imputation.Rdata")
+```
+
+
+
+# Dataset of missing gamma GT values
+```{r}
+data_cleaning_nulls_nogt <- function(data){
+
+    # Deals with all null values
+    # A lot of these are generated via conversion
+    
+    # Deal with nulls generated in the numeric conversion; drop rows 
+    # data <- data %>% filter(is.na(GammaGTValue)==F)
+    data <- data %>% filter(is.na(CurrentCoverAmount)==F)
+    data <- data %>% filter(is.na(RestingPulseValue)==F)
+    data <- data %>% filter(is.na(NumberOfFailedLevel1Evaluations)==F)
+    data <- data %>% filter(is.na(NumberOfDeferrals)==F)
+    data <- data %>% filter(is.na(MonthlyIncome_Override)==F)
+    
+    # Fill Nulls with appropriate values for numeric and character columns
+    data$NumberOfFailedDetailEvaluations[is.na(data$NumberOfFailedDetailEvaluations)]= 0
+    data <- data %>% mutate(EducationID_Override = replace(EducationID_Override, EducationID_Override == 'NULL', '1'))
+    data <- data %>% mutate(ASS_ETHNIC_GROUP = replace(ASS_ETHNIC_GROUP, ASS_ETHNIC_GROUP == '', 'UNKNOWN'))
+    data <- data %>% mutate(PROVINCE = replace(PROVINCE, PROVINCE == '', 'UNKNOWN'))
+    data <- data %>% mutate(FARMER_IND = replace(FARMER_IND, FARMER_IND == '', 'UNKNOWN'))
+    data <- data %>% mutate(PROF_MARKET_IND = replace(PROF_MARKET_IND, PROF_MARKET_IND == '', 'UNKNOWN'))
+    data <- data %>% mutate(PUBLIC_SECTOR_IND = replace(PUBLIC_SECTOR_IND, PUBLIC_SECTOR_IND == '', 'UNKNOWN'))
+    data <- data %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == '', 'UNKNOWN'))
+    data <- data %>% mutate(PUBLIC_SECTOR_TYPE = replace(PUBLIC_SECTOR_TYPE, PUBLIC_SECTOR_TYPE == 'N/A', 'UNKNOWN'))
+    data <- data %>% mutate(MARITAL_STATUS = replace(MARITAL_STATUS, MARITAL_STATUS == '', 'UNKNOWN'))
+    data <- data %>% mutate(GENDER = replace(GENDER, GENDER == '', 'UNKNOWN'))
+    
+    return(data)
+    }
+
+```
+
+
+```{r}
+df1_nogt <- data_cleaning_drop_cols(df)
+df2_nogt <- data_cleaning_nulls_nogt(df1_nogt)
+
+# df3_nogt <- data_cleaning_num_outliers(df2_nogt) #quite a big drop off here
+#remove same outlier rows from procedure above; skip the na.rm and needing to create functions again
+df3_nogt <- tibble::rownames_to_column(df2_nogt, "unique_id") %>% anti_join(outliers_id,by='unique_id')
+rownames(df3_nogt) <- df3_nogt$unique_id
+df3_nogt <- df3_nogt %>% select(-unique_id)
+
+df4_nogt <- data_cleaning_factor_cols(df3_nogt)
+```
+
+```{r}
+sapply(df4_nogt, function(x) sum(is.na(x)))
+```
+
+
+
+```{r}
+df1_nogt$GammaGTValue %>% summary
+```
+
+```{r}
+df4_nogt$GammaGTValue %>% summary
+```
+
+```{r}
+nogt_final <- df4_nogt %>% filter(is.na(GammaGTValue)==T)
+```
+
+```{r}
+sapply(nogt_final, function(x) sum(is.na(x)))
+```
+
+```{r}
+save(nogt_final,file = "D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/nogt_final.Rdata")
+```
+
+# Graphics for write up
+```{r}
+# clear the environment
+rm(list=ls())
+```
+
+```{r}
+# load images Workspace
+load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data_for_imputation.Rdata")
+```
+
+## GGT Hist
+```{r}
+(processed_hist <- df_wide %>% ggplot(aes(x=GammaGTValue))+
+    geom_histogram(binwidth = 10)+
+    theme_minimal()+
+    theme(aspect.ratio=1)+
+    # ggtitle('Histogram of Pre-processed GGT Distribution')+
+    xlab("GGT Value (IU/L)")+
+    ylab("Count")
+    #
+)
+ggsave('processed_hist.pdf',device = "pdf", processed_hist,path ="D:\\Users\\X464371\\OneDrive - University of Cape Town\\Yevashan Perumal MSc - OneDrive\\Write-up\\Figures",width = 5, height = 5)
+```
+
+## Missingess diagram
+```{r}
+library(ggplot2)
+library(naniar)
+
+(miss_var <- gg_miss_var(to_be_imputed %>% select(which(colSums(is.na(.)) > 0)),show_pct = TRUE)+
+        # ggtitle("Percentage of Missing Entries in Each Variable")+
+        theme_minimal()
+        # +theme(aspect.ratio=1)
+    )
+
+ggsave('miss_var.pdf',device = "pdf", miss_var,path ="D:\\Users\\X464371\\OneDrive - University of Cape Town\\Yevashan Perumal MSc - OneDrive\\Write-up\\Figures",width = 7, height = 7)
+
+
 ```
 

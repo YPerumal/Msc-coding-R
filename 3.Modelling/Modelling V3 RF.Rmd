@@ -2,12 +2,10 @@
 ```{r}
 # From the Imputation and Splits script
 # Current saved work space
-load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
+# load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
 
 # current state image
 load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_rf.Rdata")
-
-
 ```
 
 # Import Libraries
@@ -210,5 +208,58 @@ plus took 16-18 hrs for looped runs.
 ```{r}
 # save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image.Rdata")
 save.image(file="D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_rf.Rdata")
-
 ```
+
+# Graphics for write up
+gamma gt dist
+```{r}
+
+load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/nogt_final.Rdata")
+```
+
+
+```{r}
+wide_test_df %>% ggplot(aes(x=GammaGTValue))+
+    geom_density(binwidth = 10)+
+    theme_minimal()+
+    theme(aspect.ratio=1)+
+    ggtitle('Histogram of Pre-processed GGT Distribution')+
+    xlab("GGT Value (IU/L)")+
+    ylab("Count")
+```
+
+```{r}
+#compile both distributions on one figure
+nogt_pred <- predict(rf_wide_model,newdata = nogt_final)
+
+rf_pred_hist <- ggplot() +
+geom_density(data = wide_test_df, aes(GammaGTValue, colour = "Actual - Test")) + 
+# geom_density(data = wide_train_df, aes(GammaGTValue, colour = "Actual1"))+
+geom_density(data =  data.frame(nogt_pred), aes(nogt_pred, colour = "Pred")) +
+# scale_color_manual(name = "Distribution", values = c("Actual" = "Blue", "Pred" = "Red")) +
+theme_minimal() + 
+# theme(legend.position = "right", aspect.ratio = 1) +
+# ggtitle('Comaprison GGT Distributions')+
+xlab("GGT Value (IU/L)")+
+theme(legend.position="none")
+
+rf_pred_hist
+```
+treated same way as the wide df, going to use that one to predict
+
+```{r}
+ks.test(wide_test_df$GammaGTValue, nogt_pred)
+```
+
+
+```{r}
+summary(wide_test_df$GammaGTValue)
+summary(nogt_pred)
+```
+
+
+
+```{r}
+ggsave('rf_pred_hist.pdf',device = "pdf", rf_pred_hist,path ="D:\\Users\\X464371\\OneDrive - University of Cape Town\\Yevashan Perumal MSc - OneDrive\\Write-up\\Figures",width = 5, height = 5)
+```
+

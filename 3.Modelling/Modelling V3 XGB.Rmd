@@ -2,10 +2,10 @@
 ```{r}
 # From the Imputation and Splits script
 # Current saved work space
-load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
+# load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/post_imputation_output_data.Rdata")
 
 # current state image
-# load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_xgb.Rdata")
+load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_xgb.Rdata")
 ```
 
 # Import Libraries
@@ -28,7 +28,7 @@ library(missForest)
 
 # Basic Baseline
 ```{r}
-std.dev <- sqrt(var(wide_train_df$GammaGTValue))
+std.dev <- sqrt(var(mf_test_df$GammaGTValue))
 ```
 
 # XGB using Caret
@@ -193,3 +193,39 @@ looped_xgbmice_results_less_cols[2]
 
 save.image(file="D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/modelling_image_v3_xgb.Rdata")
 ```
+
+# Graphics for write up
+gamma gt dist
+```{r}
+
+load("D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/nogt_final.Rdata")
+```
+
+```{r}
+#compile both distributions on one figure
+nogt_pred <- predict(xgb_wide_model,newdata = nogt_final)
+
+(xgb_pred_hist <- ggplot() +
+geom_density(data = wide_test_df, aes(GammaGTValue, colour = "Actual - Test")) + 
+geom_density(data =  data.frame(nogt_pred), aes(nogt_pred, colour = "Predicted")) +
+# scale_color_manual(name = "Distribution", values = c("Actual" = "Blue", "Pred" = "Red")) +
+theme_minimal() + 
+theme(legend.position = c(.9, .9), aspect.ratio = 1) +
+# ggtitle('Comaprison GGT Distributions')+
+xlab("GGT Value (IU/L)")
+)
+```
+
+```{r}
+ks.test(wide_test_df$GammaGTValue, nogt_pred)
+```
+```{r}
+summary(wide_test_df$GammaGTValue)
+summary(nogt_pred)
+```
+
+
+```{r}
+ggsave('xgb_pred_hist.pdf',device = "pdf", xgb_pred_hist,path ="D:\\Users\\X464371\\OneDrive - University of Cape Town\\Yevashan Perumal MSc - OneDrive\\Write-up\\Figures",width = 5, height = 5)
+```
+

@@ -7,7 +7,7 @@ editor_options:
   markdown: 
     wrap: 72
 ---
-
+## Import packages
 ```{r message=FALSE, warning=FALSE}
 # library imports
 library(tidyverse)
@@ -16,12 +16,14 @@ library(Amelia)
 library(corrplot)   
 ```
 
-### Import Data
+## Import Data
 
 ```{r}
-df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+# df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
 
-# df <- read.csv('/Users/yevashanperumal/Documents/Data Science Masters/2022/Local backup of Gdrive/Data/data with some cdw.csv')
+# df <- read.csv('/Users/yevashanperumal/Library/CloudStorage/OneDrive-UniversityofCapeTown/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
+
+df <- read.csv('D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/data with some cdw.csv')
 ```
 
 ```{r}
@@ -35,7 +37,7 @@ dim(df)
 Drop the unnecessary columns
 
 ```{r}
-cols_to_drop <- c(# Just didnt seem handy:
+cols_to_drop <- c(# Not useful upon inspections:
                   'RecordID',
                   'ProductCode',
                   'DimGCSPartyKeyLifeCovered',
@@ -47,7 +49,6 @@ cols_to_drop <- c(# Just didnt seem handy:
                   'QuoteNumber' ,
                   # because of high correlation/target leakage/they're informed by GammaGT:
                   'LoadingPercentage','CoverLoadingAmount','HealthLoadingPercentage',
-                  # double check these are all for current app?could be previous:
                   'CoverLoading','HealthLoadingIndicator','CoverLoadingIndicator',
                   'UnderwritingOutcome','NoOfLoadingsApplied',
                   #customer identifier:
@@ -92,12 +93,10 @@ missmap(df2)
 colSums(is.na(df2))
 ```
 
-Couple columns I could def drop(or maybe need to check vals before
-numeric conversion): - ManualDiscountIndicator - NumberOfVerifications -
+-Couple columns I could definitely drop with inspection: - ManualDiscountIndicator - NumberOfVerifications -
 CotinineValue - InputMedium
 
-Some missing values for GammaGT; Some with like 50% missing. Maybe need
-to leave those out too.
+-Some missing values for GammaGT; 
 
 ```{r}
 # Unique values for all variables in the dataframe
@@ -160,16 +159,16 @@ box_and_hist(num_cols[1])
 box_and_hist(num_cols[2])
 ```
 
-Couple large outliers that need to be cleaned(maybe winsorised?).
-Probably data capture errors. Or those people are dead.
+Couple large outliers that need to be cleaned(winsorised an option?).
+Probably data capture errors.
+
 
 ```{r}
 # CotinineValue
 box_and_hist(num_cols[4])
 ```
 
-Dont think I cna use this one by the number of missing values. I
-remember Tinashe saying that I should use the SmokerStatus ind instead.
+Dont think I can use this one by the number of missing values. I remember being advised that I should use the SmokerStatus ind instead.
 
 ```{r}
 # BloodSugarValue
@@ -222,8 +221,7 @@ box_and_hist(num_cols[11])
 
 Outliers again. Maybe people using different scales. Probably a high
 correlation with BMI; not as much of an issue for tree based methods.
-Might need to be removed anyway? Ask Stefan why tree based methods are
-robust to highly correlated values.
+Might need to be removed anyway?
 
 ```{r}
 # WeightValue
@@ -279,7 +277,7 @@ Needs to confirm what this one means
 box_and_hist(num_cols[18])
 ```
 
-Also need to check what this means. Seems like I could use it though.
+Also need to check what this means.
 
 ```{r}
 # MonthlyIncome
@@ -293,8 +291,7 @@ Outliers skewing it. And about 16k missing values.
 box_and_hist(num_cols[20])
 ```
 
-Max value here looks like nonsense. Less missing vals than income fields
-above though.
+Max value here looks like nonsense. Less missing values than income fields above though.
 
 ```{r}
 # UnderwritingCreditAmount
@@ -322,7 +319,7 @@ All nulls, need to drop.
 box_and_hist(num_cols[24])
 ```
 
-Seems usable, but now to actually find out what it is.
+Seems usable, but now to confirm definition
 
 ```{r}
 # CoverAmount
@@ -344,7 +341,7 @@ box_and_hist(num_cols[26])
 box_and_hist(num_cols[27])
 ```
 
-Lots of nulls.lots of zeroes. also not siure if it is something
+Lots of nulls.lots of zeroes. also not sure if it is something
 determined by gamma GT/med tests. But think it might be a drop. Looks
 like they go in 2.5% jumps. Category field like Wang2021 did?
 
@@ -442,7 +439,7 @@ countplot_explore(char_cols[3])
 sum(is.na(df2$OccupationClassCode))
 ```
 
-Def use. Important from underwriting criteria persepctive
+Def use. Important from underwriting criteria perspective
 
 ```{r}
 # OccupationDescription
@@ -451,21 +448,21 @@ head(df$OccupationDescription)
 sum(is.na(df$OccupationDescription))
 ```
 
-Lots of text here. Mayhaps some nlp? could be interesting;
+Lots of text here. Maybe could feature engineer with some nlp? could be interesting;
 
 ```{r}
 # DisabilityIncomeClass
 countplot_explore(char_cols[5])
 ```
 
-Could be an interesting var. SOme spread of data, but majority unknown.
+Could be an interesting var. Some spread of data, but majority unknown.
 
 ```{r}
 # AutoDeclinedIndicator
 countplot_explore(char_cols[6])
 ```
 
-Yeah this doesnt look super helpful.Drop I think
+Doesnt look  helpful.Drop
 
 ```{r}
 # AutoUnderwrittenIndicator
@@ -479,7 +476,7 @@ Same as above.
 countplot_explore(char_cols[8])
 ```
 
-This one looks like it could be more helpful. THink I can use it.
+This one looks like it could be more helpful. Think I can use it.
 
 ```{r}
 # ProductSoldType
@@ -487,14 +484,14 @@ countplot_explore(char_cols[9])
 ```
 
 Customer had previous NTU more likely to have higher/lower gamma GT?
-Need to double checkj the definition of this field.
+Need to double check the definition of this field.
 
 ```{r}
 # ProductSoldType
 countplot_explore(char_cols[10])
 ```
 
-Seems useful, but need ot check what this is.
+Seems useful, but need to check what this is.
 
 ```{r}
 # ProductSoldType
@@ -505,7 +502,7 @@ length(unique(df$UnderwritingPostalCode))
 ```
 
 Proxy for location perhaps. could be handy. I do need to double check how
-many were recorded as 'Unkown' to see if this is very usable.
+many were recorded as 'Unknown' to see if this is very usable.
 
 ```{r}
 # ExclusionIndicator
@@ -517,15 +514,15 @@ countplot_explore(char_cols[12])
 countplot_explore(char_cols[13])
 ```
 
-Hmm looks better populated than that other product field I had above.
-Maybe I can ditch that and keep this.
+Looks better populated than that other product field I had above.
+Maybe I can drop that and keep this.
 
 ```{r}
 # EducationID_Override
 countplot_explore(char_cols[14])
 ```
 
-Check with the notmal education fields which to use. Maybe I can just
+Check with the normal education fields which to use. Maybe I can just
 combine them, and when they dont match take this one.
 
 ```{r}
@@ -569,28 +566,28 @@ From CDW; looking good.
 countplot_explore(char_cols[20])
 ```
 
-Some farmers up in here yo. Unkowns up in here too.
+Some farmers up in here yo. Unknowns up in here too.
 
 ```{r}
 # PROF_MARKET_IND
 countplot_explore(char_cols[21])
 ```
 
-Also some professionals around town.Unkowns too.
+Also some professionals around town.Unknowns too.
 
 ```{r}
 # PUBLIC_SECTOR_IND
 countplot_explore(char_cols[22])
 ```
 
-Also some civil servants around town.Unkowns too.
+Also some civil servants around town.Unknowns too.
 
 ```{r}
 # ProductSoldType
 countplot_explore(char_cols[23])
 ```
 
-Some values. Need to grou some of these together for sure.
+Some values. Need to group some of these together for sure.
 
 ```{r}
 # ProductSoldType
@@ -612,7 +609,7 @@ Marriage=high blood pressure? OK,boomer.
 countplot_explore(char_cols[26])
 ```
 
-More unkowns than expected.
+More unknowns than expected.
 
 ```{r}
 # 
@@ -631,3 +628,23 @@ Some really weird large outliers than need to be taken care of. Also
 some NAs introduced when converting to character.
 
 # End
+
+# Plots for the write up
+```{r}
+(raw_hist <- df2 %>% ggplot(aes(x=GammaGTValue))+
+    geom_histogram(binwidth = 10)+
+    theme_minimal()+
+    theme(aspect.ratio=1)+
+    # ggtitle('Histogram of Unprocessed GGT Distribution')+
+    xlab("GGT Value (IU/L)")+
+    ylab("Count")
+)
+
+
+ggsave('raw_hist.pdf',device = "pdf", raw_hist,path ="D:\\Users\\X464371\\OneDrive - University of Cape Town\\Yevashan Perumal MSc - OneDrive\\Write-up\\Figures",width = 5, height = 5)
+```
+
+```{r}
+df2 %>% ggplot(aes(x=GammaGTValue))+geom_boxplot()
+```
+

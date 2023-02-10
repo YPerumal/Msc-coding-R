@@ -217,9 +217,22 @@ complete(imp,2)
 ```
  
 ```{r}
-plot(imp)
+diagnostic_plot <- plot(imp)
+
+ggsave('diagnostic_plot.pdf',device = "pdf", diagnostic_plot,path ="D:\\Users\\X464371\\OneDrive - University of Cape Town\\Yevashan Perumal MSc - OneDrive\\Write-up\\Figures",width = 7, height = 7)
 ```
  Education ID override is weird
+```{r}
+pdf('diagnostic_plot.pdf')
+diagnostic_plot <- plot(imp, AUM+ANNUAL_INVESTMENT+ALL_CONTRACT_COUNT+ALL_BEN_COUNT ~ .it | .ms, layout = c(2, 4))
+diagnostic_plot
+dev.off()
+
+save.image(diagnostic_plot)
+
+ggsave('diagnostic_plot.pdf',device = "pdf", diagnostic_plot,path ="D:\\Users\\X464371\\OneDrive - University of Cape Town\\Yevashan Perumal MSc - OneDrive\\Write-up\\Figures",width = 7, height = 7)
+```
+ 
  
  
 ```{r}
@@ -435,11 +448,10 @@ grouped_imputed_less_cols_df <- grouped_imputed_less_cols_df %>% select(-rowname
 # Save
 ```{r}
 # local
-save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
+# save.image(file="C:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
+
 # Worskspace
 save.image(file="D:/Users/X464371/OneDrive - University of Cape Town/Yevashan Perumal MSc - OneDrive/Data/imput_splits_image.Rdata")
-
-
 ```
 
 
