@@ -86,5 +86,36 @@ Using the Trees Library
 # plot(tree_res$tree_yhat, tree_res$tree_yhat)
 # 
 # tree_rmse <- sqrt(mean((tree_yhat-y_test$GammaGTValue)^2))# MSE
+
+
+
+# from imput splits
+
+
+# Extra code
+
+```{r}
+## First Attempt
+# tmp_factors %>%
+# group_by(rowname, PUBLIC_SECTOR_IND) %>%
+# tally() %>%
+# arrange(rowname, desc(n)) %>%
+# summarize(freq = first(PUBLIC_SECTOR_IND))
+```
+
+
+```{r}
+# Code Stefan helped me with 
+
+# dum %>% group_by(name) %>% summarise(across(where(is.numeric), mean))
+# 
+# fn <- function(x){
+#     names(sort(table(x), decreasing = T))[1]
+# }
+# 
+# dumm %>% group_by(name) %>% summarise(across(where(is.factor), fn))
+```
+
+
 ```
 
